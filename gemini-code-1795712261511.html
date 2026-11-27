@@ -1,0 +1,3150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supuestos de Proyecciones Financieras - Portal Corporativo</title>
+    <!-- Tailwind CSS CDN sincronizado con la paleta ejecutiva de index.html -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        bbva: {
+                            navy: '#070E46',
+                            blue: '#001391',
+                            serene: '#85C8FF',
+                            teal: '#0F5C6E',
+                            slate: '#1B365D',
+                            lightBg: '#F4F6F9',
+                            cardBg: '#FFFFFF',
+                            calcBg: '#EBF1F8',
+                            border: '#D5DFEC'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- JSZip para inspección de columnas/hojas ocultas en .xlsx/.xlsm -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <!-- SheetJS (xlsx) para lectura de AFE, Cuadro de Pasivos y exportación -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <style>
+        .ct-master-wrap {
+            --bbva-sand: #F4F6F9;
+            --bbva-serene: #85C8FF;
+            --bbva-electric: #001391;
+            --bbva-midnight: #070E46;
+            --bbva-white: #FFFFFF;
+            --ct-slate-teal: #0F5C6E;
+            --ct-indigo-slate: #1B365D;
+            --bbva-gray-100: #E6ECF2;
+            --bbva-accent-yellow: #FFE761;
+            --bbva-accent-aqua: #8CE8EA;
+
+            font-family: Arial, Helvetica, sans-serif;
+            color: var(--bbva-midnight);
+            background-color: var(--bbva-sand);
+            line-height: 1.55;
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            box-sizing: border-box;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #F4F6F9;
+            color: #070E46;
+            font-family: Arial, Helvetica, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .ct-container {
+            max-width: 1320px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        .ct-band-white {
+            background-color: #FFFFFF;
+            padding: 40px 0;
+            border-bottom: 1px solid #E6ECF2;
+        }
+
+        .ct-band-sand {
+            background-color: #F4F6F9;
+            padding: 40px 0;
+            border-bottom: 1px solid #E6ECF2;
+        }
+
+        .ct-serif {
+            font-family: Georgia, 'Times New Roman', Times, serif;
+            font-weight: 700;
+            line-height: 1.12;
+            color: #070E46;
+        }
+
+        .ct-serif-electric {
+            font-family: Georgia, 'Times New Roman', Times, serif;
+            font-weight: 700;
+            line-height: 1.1;
+            color: #001391;
+        }
+
+        .ct-step-eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            background: #EEF4FF;
+            color: #001391;
+            border: 1px solid rgba(0, 19, 145, 0.14);
+            padding: 4px 13px;
+            border-radius: 50px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .ct-hero-banner {
+            position: relative;
+            height: 225px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 0 24px;
+            background-color: #070E46;
+            background-image:
+                linear-gradient(180deg, rgba(7, 14, 70, 0.78) 0%, rgba(0, 19, 145, 0.62) 100%),
+                url('fondo2.jpg');
+            background-size: cover;
+            background-position: center;
+            border-bottom: 4px solid #85C8FF;
+        }
+
+        .ct-hero-title {
+            position: relative;
+            z-index: 2;
+            color: #F7F8F8;
+            font-family: Georgia, 'Times New Roman', Times, serif;
+            font-weight: 700;
+            font-size: clamp(2rem, 4vw, 3.2rem);
+            line-height: 1.04;
+            margin: 0;
+            text-shadow: 0 4px 18px rgba(7, 14, 70, 0.5);
+        }
+
+        .ct-hero-sub {
+            position: relative;
+            z-index: 2;
+            color: #CFE6FF;
+            font-size: 0.94rem;
+            margin: 12px 0 0;
+            max-width: 740px;
+        }
+
+        .ct-top-pillbar {
+            background: rgba(255, 255, 255, 0.96);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid #E6ECF2;
+            padding: 12px 0;
+            box-shadow: 0 4px 20px rgba(7, 14, 70, 0.05);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .ct-btn {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 9px 20px;
+            font-size: 0.80rem;
+            font-weight: 700;
+            text-decoration: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.22s ease;
+            border: 1px solid transparent;
+        }
+
+        .ct-btn-royal {
+            background-color: #001391;
+            color: #F7F8F8;
+            border-color: #001391;
+            box-shadow: 0 4px 12px rgba(0, 19, 145, 0.18);
+        }
+        .ct-btn-royal:hover:not(:disabled) {
+            background-color: #070E46;
+            transform: translateY(-1px);
+        }
+
+        .ct-btn-soft {
+            background-color: #F4F8FD;
+            color: #001391;
+            border: 1.5px solid #B8D8FA;
+        }
+        .ct-btn-soft:hover:not(:disabled) {
+            background-color: #001391;
+            color: #FFFFFF;
+            border-color: #001391;
+        }
+
+        .ct-btn-emerald {
+            background: linear-gradient(135deg, #0F5C6E 0%, #0A4352 100%);
+            color: #FFFFFF;
+            border-color: #0F5C6E;
+        }
+        .ct-btn-emerald:hover:not(:disabled) {
+            background: linear-gradient(135deg, #070E46 0%, #0F5C6E 100%);
+            transform: translateY(-1px);
+        }
+
+        .ct-btn-gold {
+            background: #FFE761;
+            color: #070E46;
+            border: 1.5px solid #F5D227;
+            box-shadow: 0 4px 14px rgba(245, 210, 39, 0.35);
+        }
+        .ct-btn-gold:hover:not(:disabled) {
+            background: #8CE8EA;
+            border-color: #8CE8EA;
+            transform: translateY(-1px);
+        }
+
+        .ct-btn-danger {
+            background: #DC2626;
+            color: #FFFFFF;
+            border-color: #DC2626;
+            box-shadow: 0 4px 14px rgba(220, 38, 38, 0.25);
+        }
+        .ct-btn-danger:hover:not(:disabled) {
+            background: #991B1B;
+            transform: translateY(-1px);
+        }
+
+        .ct-card {
+            background: #FFFFFF;
+            border: 1px solid #E6ECF2;
+            border-top: 5px solid #001391;
+            border-radius: 18px;
+            padding: 28px 30px;
+            box-shadow: 0 10px 30px rgba(7, 14, 70, 0.05);
+        }
+
+        .ct-upload-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 24px 18px;
+            background: linear-gradient(180deg, #F8FBFF 0%, #F0F6FF 100%);
+            border: 2px dashed #85C8FF;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.24s ease;
+        }
+        .ct-upload-box:hover, .ct-upload-box.drag-active {
+            background: #FFFFFF;
+            border-color: #001391;
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px rgba(0, 19, 145, 0.10);
+        }
+        .ct-upload-box.loaded {
+            border-style: solid;
+            border-color: #0F5C6E;
+            background: linear-gradient(180deg, #F2FBF9 0%, #FFFFFF 100%);
+        }
+
+        .ct-view-switcher {
+            display: inline-flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            background: #EEF2F7;
+            padding: 6px;
+            border-radius: 14px;
+            border: 1px solid #DCE4EE;
+        }
+
+        .ct-view-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: #4A5568;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .ct-view-pill:hover {
+            color: #070E46;
+            background: rgba(255, 255, 255, 0.65);
+        }
+        .ct-view-pill.active {
+            background: #FFFFFF;
+            color: #001391;
+            box-shadow: 0 3px 10px rgba(7, 14, 70, 0.10);
+        }
+
+        .ct-fin-table-wrap {
+            overflow-x: auto;
+            border-radius: 14px;
+            border: 1px solid #D8E1EC;
+            background: #FFFFFF;
+            box-shadow: 0 4px 16px rgba(7, 14, 70, 0.03);
+        }
+        .ct-fin-table-wrap table {
+            font-variant-numeric: tabular-nums;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        .ct-sticky-col {
+            position: sticky;
+            left: 0;
+            z-index: 5;
+            min-width: 245px;
+            box-shadow: 2px 0 6px rgba(7, 14, 70, 0.05);
+        }
+
+        .ct-row-regular {
+            background-color: #FFFFFF;
+        }
+        .ct-row-regular:hover, .ct-row-regular:hover .ct-sticky-col {
+            background-color: #F5F9FF !important;
+        }
+        .ct-row-subtotal {
+            background-color: #EEF4FB;
+            color: #070E46;
+            font-weight: 700;
+        }
+        .ct-sticky-subtotal {
+            background-color: #E6F0FA !important;
+            color: #070E46;
+            border-left: 3px solid #001391 !important;
+        }
+        .ct-row-total-dark {
+            background-color: #070E46;
+            color: #FFFFFF;
+            font-weight: 800;
+        }
+        .ct-sticky-total-dark {
+            background-color: #070E46 !important;
+            color: #FFFFFF !important;
+        }
+
+        /* Resaltado obligatorio de negativos en ROJO */
+        .cell-negativo {
+            background-color: #FEE2E2 !important;
+            color: #B91C1C !important;
+            font-weight: 800 !important;
+            border-color: #FCA5A5 !important;
+        }
+        .cell-negativo-suave {
+            color: #DC2626 !important;
+            font-weight: 700 !important;
+            background-color: #FEF2F2 !important;
+        }
+        .cell-positivo-caja {
+            background-color: #ECFDF5 !important;
+            color: #065F46 !important;
+            font-weight: 800 !important;
+        }
+
+        .input-param {
+            background-color: #F7FAFF;
+            border: 1.5px solid #C4D7F2;
+            font-weight: 700;
+            color: #070E46;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            border-radius: 8px;
+            padding: 5px 8px;
+            width: 100%;
+            min-width: 78px;
+            transition: all 0.15s ease;
+        }
+        .input-param:focus {
+            background-color: #FFFFFF;
+            border-color: #001391;
+            box-shadow: 0 0 0 3px rgba(0, 19, 145, 0.14);
+            outline: none;
+        }
+
+        .input-text-tbl {
+            background-color: #F7FAFF;
+            border: 1.5px solid #C4D7F2;
+            font-weight: 600;
+            color: #070E46;
+            border-radius: 8px;
+            padding: 5px 8px;
+            width: 100%;
+        }
+
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(7, 14, 70, 0.65);
+            backdrop-filter: blur(4px);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .anim-fade {
+            animation: fadeInUp 0.28s ease;
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+<div class="ct-master-wrap">
+
+    <!-- ================= HERO BANNER ================= -->
+    <header class="ct-hero-banner">
+        <h1 class="ct-hero-title">Supuestos de Proyecciones Financieras</h1>
+        <p class="ct-hero-sub">Integración automática de AFE y Cuadro de Pasivos • Cálculo de parámetros promedio históricos • Simulador interactivo de Edo. Financ. y cuadre de caja</p>
+    </header>
+
+    <!-- ================= BARRA SUPERIOR ================= -->
+    <nav class="ct-top-pillbar">
+        <div class="ct-container flex flex-wrap items-center justify-between gap-2">
+            <div class="flex flex-wrap items-center gap-2">
+                <a href="index.html" class="ct-btn ct-btn-soft">
+                    <i class="fa-solid fa-arrow-left"></i> Volver al AFE
+                </a>
+                <a href="#sec-carga-archivos" class="ct-btn ct-btn-royal">
+                    <i class="fa-solid fa-folder-open"></i> 1. Archivos AFE y Pasivos
+                </a>
+                <button type="button" onclick="abrirModalAnios()" id="nav-btn-proyectar" class="ct-btn ct-btn-gold">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> 2. Definir Años y Proyectar
+                </button>
+                <a href="#sec-resultados-proyeccion" id="nav-link-edo" class="hidden ct-btn ct-btn-emerald">
+                    <i class="fa-solid fa-table-list"></i> 3. Edo. Financ. y Ajustes
+                </a>
+            </div>
+            <div class="flex items-center gap-2">
+                <button type="button" onclick="cargarCasoDemo()" class="ct-btn ct-btn-soft text-xs" title="Carga un AFE de 3 años y un Cuadro de Pasivos de prueba">
+                    <i class="fa-solid fa-flask"></i> Cargar Demo
+                </button>
+                <button type="button" onclick="exportarProyeccionesExcel()" id="btn-exportar-xlsx" disabled class="ct-btn ct-btn-emerald opacity-50 cursor-not-allowed">
+                    <i class="fa-solid fa-file-excel"></i> Exportar Excel
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ==========================================================================
+         BANDA 1: RECEPCIÓN DE ARCHIVOS (AFE Y CUADRO DE PASIVOS)
+         ========================================================================== -->
+    <section id="sec-carga-archivos" class="ct-band-white">
+        <div class="ct-container">
+            <div class="ct-card">
+                <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 pb-5 mb-6 border-b border-slate-200">
+                    <div>
+                        <span class="ct-step-eyebrow">
+                            <i class="fa-solid fa-cloud-arrow-up"></i> Paso 01 • Insumos Financieros del Cliente
+                        </span>
+                        <h2 class="ct-serif-electric text-2xl m-0">Cargar AFE y Cuadro de Pasivos</h2>
+                        <p class="text-xs md:text-sm text-slate-600 mt-1 m-0">
+                            Sube el archivo <strong>AFE</strong> (se extrae <em>Captura Edo. Fin.</em> y los <em>Parámetros</em> promediando cambios año con año) y el <strong>Cuadro de Pasivos</strong> (se extrae el módulo de <em>Crédito</em>).
+                        </p>
+                    </div>
+                    <div id="badge-empresa-header" class="bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-xs">
+                        <div class="text-slate-500 font-semibold">ACREDITADO / EMPRESA</div>
+                        <div id="lbl-empresa-proy" class="font-extrabold text-bbva-navy text-sm">PENDIENTE DE CARGA</div>
+                    </div>
+                </div>
+
+                <!-- Aviso si heredó datos desde index.html -->
+                <div id="banner-localstorage" class="hidden mb-5 p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                        <i class="fa-solid fa-circle-check text-emerald-600 mr-1.5"></i>
+                        <strong>AFE sincronizado desde el portal AFE:</strong> Se cargaron automáticamente <span id="lbl-ls-ejercicios" class="font-bold">0</span> ejercicio(s) históricos. Solo falta adjuntar el <strong>Cuadro de Pasivos</strong> (o puedes reemplazar el AFE aquí mismo).
+                    </div>
+                    <button type="button" onclick="abrirModalAnios()" class="ct-btn ct-btn-emerald text-xs py-1.5 px-4">
+                        Proyectar Ahora <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+
+                <!-- Dos Dropzones lado a lado -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                    <!-- 1. ARCHIVO AFE -->
+                    <div class="flex flex-col">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-extrabold text-bbva-navy uppercase tracking-wider">
+                                <i class="fa-solid fa-file-excel text-bbva-blue mr-1"></i> 1. Archivo AFE (Histórico)
+                            </span>
+                            <span id="pill-status-afe" class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-500">
+                                Sin archivo
+                            </span>
+                        </div>
+                        <label for="input-file-afe" id="dropzone-afe" class="ct-upload-box flex-1">
+                            <div class="w-12 h-12 rounded-full bg-white shadow flex items-center justify-center text-bbva-blue text-xl mb-2.5">
+                                <i class="fa-solid fa-chart-line"></i>
+                            </div>
+                            <span id="lbl-file-afe" class="text-sm font-bold text-bbva-navy">
+                                Haz clic o arrastra el archivo Excel AFE
+                            </span>
+                            <span class="text-xs text-slate-500 mt-1">
+                                .xlsx, .xlsm, .xls • Extrae ejercicios de 12 meses para <strong>Captura Edo. Fin.</strong> y promedios YoY de <strong>Parámetros</strong>
+                            </span>
+                        </label>
+                        <input type="file" id="input-file-afe" accept=".xlsx,.xlsm,.xls" class="hidden" onchange="procesarArchivoAFE(event)">
+                        <div id="detalle-afe-cargado" class="hidden mt-3 p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1.5">
+                            <div class="flex items-center justify-between flex-wrap gap-2">
+                                <span id="txt-resumen-afe" class="font-bold text-emerald-700"></span>
+                                <select id="select-hoja-afe" onchange="cambiarHojaAFE()" class="hidden input-text-tbl w-auto text-xs py-1"></select>
+                            </div>
+                            <div id="chips-anios-afe" class="flex flex-wrap gap-1.5"></div>
+                        </div>
+                    </div>
+
+                    <!-- 2. ARCHIVO CUADRO DE PASIVOS -->
+                    <div class="flex flex-col">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-extrabold text-bbva-navy uppercase tracking-wider">
+                                <i class="fa-solid fa-landmark text-[#0F5C6E] mr-1"></i> 2. Archivo Cuadro de Pasivos
+                            </span>
+                            <span id="pill-status-pasivos" class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-500">
+                                Opcional / Recomendado
+                            </span>
+                        </div>
+                        <label for="input-file-pasivos" id="dropzone-pasivos" class="ct-upload-box flex-1">
+                            <div class="w-12 h-12 rounded-full bg-white shadow flex items-center justify-center text-[#0F5C6E] text-xl mb-2.5">
+                                <i class="fa-solid fa-file-invoice-dollar"></i>
+                            </div>
+                            <span id="lbl-file-pasivos" class="text-sm font-bold text-bbva-navy">
+                                Haz clic o arrastra el Cuadro de Pasivos
+                            </span>
+                            <span class="text-xs text-slate-500 mt-1">
+                                .xlsx, .xlsm, .xls • Extrae bancos, saldos, tasas, plazos y amortizaciones para el módulo de <strong>Crédito</strong>
+                            </span>
+                        </label>
+                        <input type="file" id="input-file-pasivos" accept=".xlsx,.xlsm,.xls" class="hidden" onchange="procesarArchivoPasivos(event)">
+                        <div id="detalle-pasivos-cargado" class="hidden mt-3 p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1.5">
+                            <div class="flex items-center justify-between flex-wrap gap-2">
+                                <span id="txt-resumen-pasivos" class="font-bold text-emerald-700"></span>
+                                <select id="select-hoja-pasivos" onchange="cambiarHojaPasivos()" class="hidden input-text-tbl w-auto text-xs py-1"></select>
+                            </div>
+                            <div id="chips-pasivos" class="flex flex-wrap gap-1.5"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botón Principal de Acción -->
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-200">
+                    <div class="text-xs text-slate-600">
+                        <i class="fa-solid fa-circle-info text-bbva-blue mr-1"></i>
+                        Si aún no subes el Cuadro de Pasivos, el sistema tomará temporalmente la deuda bancaria registrada en el AFE y podrás editarla en <strong>Crédito</strong>.
+                    </div>
+                    <button type="button" onclick="abrirModalAnios()" id="btn-iniciar-proyecciones" class="ct-btn ct-btn-gold px-7 py-3 text-sm whitespace-nowrap">
+                        <i class="fa-solid fa-play"></i> Generar Proyecciones Financieras
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==========================================================================
+         BANDA 2: ÁREA DE RESULTADOS (EDO. FINANC. + PARÁMETROS + CRÉDITO + CAPTURA)
+         ========================================================================== -->
+    <section id="sec-resultados-proyeccion" class="hidden ct-band-sand anim-fade">
+        <div class="ct-container space-y-6">
+
+            <!-- SEMÁFORO EJECUTIVO DE CAJA Y ALERTAS DE CUENTAS NEGATIVAS -->
+            <div id="panel-alerta-caja" class="rounded-2xl p-5 border-2 shadow-sm flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+                <div class="flex items-start gap-3.5">
+                    <div id="icono-alerta-caja" class="w-12 h-12 rounded-xl flex items-center justify-center text-xl shrink-0"></div>
+                    <div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <h3 id="titulo-alerta-caja" class="ct-serif text-lg m-0"></h3>
+                            <span id="badge-horizonte-activo" class="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-bbva-navy text-white"></span>
+                        </div>
+                        <p id="desc-alerta-caja" class="text-xs md:text-sm mt-1 m-0"></p>
+                    </div>
+                </div>
+                <div class="flex flex-wrap items-center gap-2 shrink-0">
+                    <button type="button" onclick="abrirModalAnios()" class="ct-btn ct-btn-soft text-xs">
+                        <i class="fa-solid fa-calendar-days"></i> Cambiar Años
+                    </button>
+                    <button type="button" onclick="autoCuadrarCajaPositiva()" id="btn-auto-cuadrar" class="hidden ct-btn ct-btn-danger text-xs">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Auto-Ajustar Crédito para Cuadrar Caja
+                    </button>
+                    <button type="button" onclick="restaurarPromediosAFE()" class="ct-btn ct-btn-soft text-xs" title="Vuelve a los parámetros promedio calculados del AFE">
+                        <i class="fa-solid fa-rotate-left"></i> Restaurar Promedios AFE
+                    </button>
+                </div>
+            </div>
+
+            <!-- TARJETAS KPI RESUMEN -->
+            <div id="kpi-resumen-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
+
+            <!-- PANEL RÁPIDO DE AJUSTE EN VIVO (SIEMPRE ACCESIBLE ARRIBA DE EDO. FINANC.) -->
+            <div class="ct-card" style="border-top-color: #0F5C6E; padding: 20px 24px;">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="w-7 h-7 rounded-lg bg-[#E6F6F4] text-[#0F5C6E] flex items-center justify-center text-xs">
+                            <i class="fa-solid fa-sliders"></i>
+                        </span>
+                        <h3 class="text-sm font-extrabold text-bbva-navy uppercase tracking-wider m-0">
+                            Simulador Rápido: Ajustar Parámetros y Crédito en Tiempo Real
+                        </h3>
+                    </div>
+                    <button type="button" onclick="togglePanelRapido()" class="text-xs font-bold text-bbva-blue hover:underline">
+                        <span id="lbl-toggle-rapido">Ocultar controles</span>
+                    </button>
+                </div>
+
+                <div id="cuerpo-simulador-rapido" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-xs pt-2 border-t border-slate-100">
+                    <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                        <label class="block font-bold text-slate-600 text-[11px] mb-1">Crec. Ventas (% anual)</label>
+                        <input type="number" step="0.1" id="quick-crec-ventas" class="input-param text-xs" oninput="aplicarAjusteGlobalParam('crecVentas', this.value)">
+                    </div>
+                    <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                        <label class="block font-bold text-slate-600 text-[11px] mb-1">Costo Ventas (% s/Vtas)</label>
+                        <input type="number" step="0.1" id="quick-costo-ventas" class="input-param text-xs" oninput="aplicarAjusteGlobalParam('costoVentasPct', this.value)">
+                    </div>
+                    <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                        <label class="block font-bold text-slate-600 text-[11px] mb-1">Gtos. Op. (% s/Vtas)</label>
+                        <input type="number" step="0.1" id="quick-gtos-op" class="input-param text-xs" oninput="aplicarAjusteGlobalParam('gtosOpPct', this.value)">
+                    </div>
+                    <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                        <label class="block font-bold text-slate-600 text-[11px] mb-1">Días Clientes / Inv / Prov</label>
+                        <div class="grid grid-cols-3 gap-1">
+                            <input type="number" step="1" id="quick-dias-cli" title="Días Clientes" class="input-param text-[11px] px-1 min-w-0" oninput="aplicarAjusteGlobalParam('diasClientes', this.value)">
+                            <input type="number" step="1" id="quick-dias-inv" title="Días Inventarios" class="input-param text-[11px] px-1 min-w-0" oninput="aplicarAjusteGlobalParam('diasInventarios', this.value)">
+                            <input type="number" step="1" id="quick-dias-prov" title="Días Proveedores" class="input-param text-[11px] px-1 min-w-0" oninput="aplicarAjusteGlobalParam('diasProveedores', this.value)">
+                        </div>
+                    </div>
+                    <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                        <label class="block font-bold text-slate-600 text-[11px] mb-1">CAPEX (% Vtas) / Div (%)</label>
+                        <div class="grid grid-cols-2 gap-1">
+                            <input type="number" step="0.1" id="quick-capex" title="CAPEX % Ventas" class="input-param text-[11px] px-1 min-w-0" oninput="aplicarAjusteGlobalParam('capexPct', this.value)">
+                            <input type="number" step="1" id="quick-div" title="Dividendos % Utilidad Neta" class="input-param text-[11px] px-1 min-w-0" oninput="aplicarAjusteGlobalParam('dividendosPct', this.value)">
+                        </div>
+                    </div>
+                    <div class="bg-blue-50/80 p-2.5 rounded-xl border border-blue-200">
+                        <label class="block font-bold text-bbva-blue text-[11px] mb-1">Nuevo Crédito ($ / Tasa %)</label>
+                        <div class="grid grid-cols-2 gap-1">
+                            <input type="number" step="100" id="quick-credito-monto" title="Monto Nuevo Crédito Año 1" class="input-param text-[11px] px-1 min-w-0" oninput="actualizarCreditoRapido()">
+                            <input type="number" step="0.25" id="quick-credito-tasa" title="Tasa Anual %" class="input-param text-[11px] px-1 min-w-0" oninput="actualizarCreditoRapido()">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CONTENEDOR PRINCIPAL DE PESTAÑAS DEL MODELO -->
+            <div class="ct-card">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 pb-4 mb-5 border-b border-slate-200">
+                    <div class="ct-view-switcher">
+                        <button type="button" data-tab="edofin" onclick="cambiarTabModelo('edofin')" class="ct-view-pill active">
+                            <i class="fa-solid fa-file-contract"></i> Edo. Financ. (Resultado Final)
+                        </button>
+                        <button type="button" data-tab="parametros" onclick="cambiarTabModelo('parametros')" class="ct-view-pill">
+                            <i class="fa-solid fa-sliders"></i> Parámetros (Promedios AFE)
+                        </button>
+                        <button type="button" data-tab="credito" onclick="cambiarTabModelo('credito')" class="ct-view-pill">
+                            <i class="fa-solid fa-landmark"></i> Crédito (Pasivos y Nuevo)
+                        </button>
+                        <button type="button" data-tab="captura" onclick="cambiarTabModelo('captura')" class="ct-view-pill">
+                            <i class="fa-solid fa-database"></i> Captura Edo. Fin. (Año Base)
+                        </button>
+                    </div>
+                    <div class="text-[11px] font-bold text-slate-500">
+                        <span class="inline-block w-3 h-3 rounded bg-red-200 border border-red-400 align-middle mr-1"></span> Celdas en rojo = valores negativos / alerta de liquidez
+                    </div>
+                </div>
+
+                <!-- ==================== TAB 1: EDO. FINANC. ==================== -->
+                <div id="tab-edofin" class="space-y-6 anim-fade">
+                    <!-- Sub-filtro de vistas dentro de Edo. Financ. -->
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div class="flex flex-wrap gap-1.5 text-xs">
+                            <button type="button" onclick="filtrarBloquesEdo('todos')" data-sub="todos" class="sub-edo-btn ct-btn ct-btn-royal py-1.5 px-3.5 text-xs">Todo Edo. Financ.</button>
+                            <button type="button" onclick="filtrarBloquesEdo('er')" data-sub="er" class="sub-edo-btn ct-btn ct-btn-soft py-1.5 px-3.5 text-xs">Estado de Resultados</button>
+                            <button type="button" onclick="filtrarBloquesEdo('flujo')" data-sub="flujo" class="sub-edo-btn ct-btn ct-btn-soft py-1.5 px-3.5 text-xs">Flujo de Efectivo y Caja</button>
+                            <button type="button" onclick="filtrarBloquesEdo('bg')" data-sub="bg" class="sub-edo-btn ct-btn ct-btn-soft py-1.5 px-3.5 text-xs">Balance General</button>
+                            <button type="button" onclick="filtrarBloquesEdo('razones')" data-sub="razones" class="sub-edo-btn ct-btn ct-btn-soft py-1.5 px-3.5 text-xs">Razones y Servicio de Deuda</button>
+                        </div>
+                        <span class="text-xs text-slate-500 font-semibold">Cifras en las mismas unidades del AFE (ej. miles de pesos)</span>
+                    </div>
+
+                    <!-- BLOQUE A: ESTADO DE RESULTADOS PROYECTADO -->
+                    <div id="edo-bloque-er">
+                        <h3 class="text-xs font-extrabold text-[#070E46] uppercase tracking-wider mb-2">
+                            I. Estado de Resultados Proyectado
+                        </h3>
+                        <div class="ct-fin-table-wrap">
+                            <table class="text-xs" id="tbl-edo-er"></table>
+                        </div>
+                    </div>
+
+                    <!-- BLOQUE B: FLUJO DE EFECTIVO Y CAJA PROYECTADA -->
+                    <div id="edo-bloque-flujo">
+                        <h3 class="text-xs font-extrabold text-[#0F5C6E] uppercase tracking-wider mb-2">
+                            II. Flujo de Efectivo Proyectado y Posición de Caja Final
+                        </h3>
+                        <div class="ct-fin-table-wrap">
+                            <table class="text-xs" id="tbl-edo-flujo"></table>
+                        </div>
+                    </div>
+
+                    <!-- BLOQUE C: BALANCE GENERAL PROYECTADO -->
+                    <div id="edo-bloque-bg">
+                        <h3 class="text-xs font-extrabold text-[#1B365D] uppercase tracking-wider mb-2">
+                            III. Balance General Proyectado (Cuadre Contable Automático)
+                        </h3>
+                        <div class="ct-fin-table-wrap">
+                            <table class="text-xs" id="tbl-edo-bg"></table>
+                        </div>
+                    </div>
+
+                    <!-- BLOQUE D: RAZONES FINANCIERAS Y COBERTURA DE DEUDA -->
+                    <div id="edo-bloque-razones">
+                        <h3 class="text-xs font-extrabold text-[#001391] uppercase tracking-wider mb-2">
+                            IV. Indicadores Financieros y Cobertura de Servicio de Deuda (DSCR)
+                        </h3>
+                        <div class="ct-fin-table-wrap">
+                            <table class="text-xs" id="tbl-edo-razones"></table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ==================== TAB 2: PARÁMETROS ==================== -->
+                <div id="tab-parametros" class="hidden space-y-6 anim-fade">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 bg-blue-50/70 border border-blue-200 rounded-xl p-4 text-xs">
+                        <div>
+                            <strong class="text-bbva-navy text-sm block">Supuestos de Proyección por Año (Modificables en Vivo)</strong>
+                            <span class="text-slate-600">Los valores iniciales provienen del promedio histórico de cambios año con año del AFE. Cualquier modificación recalcula <strong>Edo. Financ.</strong> automáticamente.</span>
+                        </div>
+                        <button type="button" onclick="restaurarPromediosAFE()" class="ct-btn ct-btn-royal text-xs whitespace-nowrap">
+                            <i class="fa-solid fa-rotate-left"></i> Recalcular desde Promedio AFE
+                        </button>
+                    </div>
+
+                    <!-- Tabla Editable de Parámetros Año 1..N -->
+                    <div class="ct-fin-table-wrap">
+                        <table class="text-xs" id="tbl-parametros-edit"></table>
+                    </div>
+
+                    <!-- Respaldo: Análisis Histórico YoY del AFE -->
+                    <div>
+                        <h3 class="text-xs font-extrabold text-[#070E46] uppercase tracking-wider mb-2">
+                            Análisis Histórico Año con Año (AFE) — Base de Cálculo de Promedios
+                        </h3>
+                        <div class="ct-fin-table-wrap">
+                            <table class="text-xs" id="tbl-analisis-historico-afe"></table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ==================== TAB 3: CRÉDITO ==================== -->
+                <div id="tab-credito" class="hidden space-y-6 anim-fade">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 bg-teal-50/70 border border-teal-200 rounded-xl p-4 text-xs">
+                        <div>
+                            <strong class="text-bbva-navy text-sm block">Módulo de Crédito y Servicio de Deuda (Cuadro de Pasivos + Nuevo Financiamiento)</strong>
+                            <span class="text-slate-600">Edita saldos, tasas, plazos o periodos de gracia de los créditos existentes, o agrega líneas nuevas/revolventes para cuadrar la caja a positivo.</span>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <button type="button" onclick="agregarCreditoManual('EXISTENTE')" class="ct-btn ct-btn-soft text-xs">
+                                <i class="fa-solid fa-plus"></i> Agregar Pasivo Existente
+                            </button>
+                            <button type="button" onclick="agregarCreditoManual('NUEVO')" class="ct-btn ct-btn-emerald text-xs">
+                                <i class="fa-solid fa-plus-circle"></i> Agregar Nuevo Crédito / Línea
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Diagnóstico de conciliación Cuadro de Pasivos vs AFE -->
+                    <div id="aviso-conciliacion-deuda" class="hidden p-3.5 rounded-xl bg-amber-50 border border-amber-300 text-xs text-amber-900 flex flex-wrap items-center justify-between gap-2">
+                        <div id="txt-conciliacion-deuda"></div>
+                        <button type="button" onclick="sincronizarDeudaBaseConPasivos()" class="ct-btn ct-btn-gold text-xs py-1.5 px-3.5">
+                            Sincronizar Año Base con Cuadro de Pasivos
+                        </button>
+                    </div>
+
+                    <!-- Tabla Editable de Créditos -->
+                    <div class="ct-fin-table-wrap">
+                        <table class="text-xs" id="tbl-creditos-edit"></table>
+                    </div>
+
+                    <!-- Calendario Consolidado de Servicio de Deuda -->
+                    <div>
+                        <h3 class="text-xs font-extrabold text-[#1B365D] uppercase tracking-wider mb-2">
+                            Calendario Consolidado de Servicio de Deuda Proyectado (Saldos, Amortizaciones e Intereses)
+                        </h3>
+                        <div class="ct-fin-table-wrap">
+                            <table class="text-xs" id="tbl-servicio-deuda"></table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ==================== TAB 4: CAPTURA EDO. FIN. ==================== -->
+                <div id="tab-captura" class="hidden space-y-5 anim-fade">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs">
+                        <div>
+                            <strong class="text-bbva-navy text-sm block">Captura Edo. Fin. — Año Base (<span id="lbl-anio-base-captura">----</span>)</strong>
+                            <span class="text-slate-600">Extraído automáticamente del último ejercicio del AFE. Puedes ajustar cualquier cifra del año base y el modelo recalculará todos los años proyectados.</span>
+                        </div>
+                        <div id="badge-cuadre-base" class="font-extrabold px-3 py-1.5 rounded-full text-xs"></div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="ct-fin-table-wrap">
+                            <table class="text-xs" id="tbl-captura-er"></table>
+                        </div>
+                        <div class="ct-fin-table-wrap">
+                            <table class="text-xs" id="tbl-captura-bg"></table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- ==========================================================================
+         MODAL: PREGUNTAR NÚMERO DE AÑOS A PROYECTAR
+         ========================================================================== -->
+    <div id="modal-anios" class="hidden modal-backdrop">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border-t-4 border-bbva-blue anim-fade">
+            <div class="flex items-start justify-between gap-3 mb-4">
+                <div>
+                    <span class="ct-step-eyebrow mb-1">
+                        <i class="fa-solid fa-calendar-check"></i> Configuración de Proyecciones
+                    </span>
+                    <h3 class="ct-serif-electric text-xl m-0">¿Cuántos años deseas proyectar?</h3>
+                </div>
+                <button type="button" onclick="cerrarModalAnios()" class="text-slate-400 hover:text-slate-700 text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <p class="text-xs text-slate-600 mb-4">
+                El sistema calculará automáticamente <strong>Captura Edo. Fin.</strong> desde el AFE, <strong>Crédito</strong> desde el Cuadro de Pasivos y <strong>Parámetros</strong> promediando las variaciones históricas año con año del AFE.
+            </p>
+
+            <!-- Selector rápido de años -->
+            <div class="mb-4">
+                <label class="block text-xs font-bold text-bbva-navy mb-2">Número de años a proyectar (1 a 10):</label>
+                <div class="flex items-center gap-2 mb-2.5">
+                    <button type="button" onclick="setAniosModal(3)" class="btn-anio-preset ct-btn ct-btn-soft py-1.5 px-4 text-xs">3 años</button>
+                    <button type="button" onclick="setAniosModal(5)" class="btn-anio-preset ct-btn ct-btn-royal py-1.5 px-4 text-xs">5 años</button>
+                    <button type="button" onclick="setAniosModal(7)" class="btn-anio-preset ct-btn ct-btn-soft py-1.5 px-4 text-xs">7 años</button>
+                    <button type="button" onclick="setAniosModal(10)" class="btn-anio-preset ct-btn ct-btn-soft py-1.5 px-4 text-xs">10 años</button>
+                </div>
+                <input type="number" id="input-num-anios" min="1" max="10" value="5" class="input-param text-left text-base px-3 py-2">
+            </div>
+
+            <!-- Criterio de cálculo de parámetros -->
+            <div class="mb-5 bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-xs space-y-2">
+                <label class="block font-bold text-bbva-navy">Criterio inicial para llenar Parámetros:</label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="criterio-params" value="promedio" checked>
+                    <span><strong>Promedio histórico YoY del AFE</strong> (recomendado: promedia cambios año con año)</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="criterio-params" value="ultimo">
+                    <span><strong>Último ejercicio del AFE</strong> (mantener márgenes y rotaciones del cierre más reciente)</span>
+                </label>
+            </div>
+
+            <div class="flex justify-end gap-2">
+                <button type="button" onclick="cerrarModalAnios()" class="ct-btn ct-btn-soft text-xs">Cancelar</button>
+                <button type="button" onclick="confirmarYGenerarProyecciones()" class="ct-btn ct-btn-gold text-xs px-6">
+                    <i class="fa-solid fa-rocket"></i> Generar Edo. Financ.
+                </button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+// ============================================================================
+// ESTADO GLOBAL DEL MODELO DE PROYECCIONES FINANCIERAS
+// ============================================================================
+const ESTADO = {
+    empresa: '',
+    noCliente: '',
+    ejerciciosAFE: [],        // Ejercicios históricos ordenados cronológicamente
+    anioBase: 2025,
+    numAnios: 5,
+    criterioInicial: 'promedio',
+    capturaBase: null,        // Objeto editable de Captura Edo. Fin. (Año 0)
+    analisisHistorico: [],    // Ratios y cambios YoY año con año del AFE
+    promediosAFE: null,       // Promedios calculados desde el AFE
+    parametros: [],           // Array [0..numAnios-1] editable por año
+    creditos: [],             // Array de líneas de crédito (existentes + nuevas)
+    proyeccion: null,         // Resultado completo calculado de Edo. Financ.
+    tabActiva: 'edofin',
+    subEdoActivo: 'todos',
+    wbAFE: null,
+    ocultasAFE: {},
+    hojasOcultasAFE: new Set(),
+    wbPasivos: null
+};
+
+// ============================================================================
+// UTILIDADES DE FORMATO Y PARSEO
+// ============================================================================
+function fmtNum(v, dec = 0) {
+    const n = Number(v);
+    if (!isFinite(n)) return '0';
+    return new Intl.NumberFormat('en-US', {
+        minimumFractionDigits: dec,
+        maximumFractionDigits: dec
+    }).format(Math.abs(n) < 0.005 ? 0 : n);
+}
+
+function fmtPct(v, dec = 1) {
+    const n = Number(v);
+    if (!isFinite(n)) return '0.0%';
+    return n.toFixed(dec) + '%';
+}
+
+function fmtX(v) {
+    const n = Number(v);
+    if (!isFinite(n)) return '0.00x';
+    return n.toFixed(2) + 'x';
+}
+
+function normTxt(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .toUpperCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function parseNum(val) {
+    if (val === null || val === undefined || val === '') return 0;
+    if (typeof val === 'number') return isNaN(val) ? 0 : val;
+    let s = String(val).trim();
+    if (!s || s === '-' || s === 'N/A' || s === 'N.A.') return 0;
+    let neg = false;
+    if (s.startsWith('(') && s.endsWith(')')) { neg = true; s = s.slice(1, -1); }
+    if (s.startsWith('-')) { neg = true; s = s.slice(1); }
+    s = s.replace(/[^0-9.,]/g, '');
+    if (!s) return 0;
+    const p = s.includes('.'), c = s.includes(',');
+    if (p && c) {
+        s = s.lastIndexOf(',') > s.lastIndexOf('.') ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, '');
+    } else if (c && !p) {
+        const parts = s.split(',');
+        s = (parts.length > 2 || (parts[1] && parts[1].length === 3)) ? s.replace(/,/g, '') : s.replace(',', '.');
+    } else if (p && !c) {
+        const parts = s.split('.');
+        if (parts.length > 2) s = s.replace(/\./g, '');
+    }
+    const n = parseFloat(s);
+    if (isNaN(n)) return 0;
+    return neg ? -Math.abs(n) : n;
+}
+
+function parseFechaExcel(val) {
+    if (val === null || val === undefined || val === '') return null;
+    if (typeof val === 'number') {
+        if (val > 32874 && val < 65000 && typeof XLSX !== 'undefined') {
+            const d = XLSX.SSF.parse_date_code(val);
+            if (d && d.y >= 1990 && d.y <= 2100) {
+                return `${d.y}-${String(d.m).padStart(2, '0')}-${String(d.d).padStart(2, '0')}`;
+            }
+        }
+        if (val >= 1990 && val <= 2060 && Number.isInteger(val)) return `${val}-12-31`;
+        return null;
+    }
+    const s = String(val).trim();
+    let m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+    if (m) {
+        const y = m[3].length === 2 ? (parseInt(m[3], 10) > 50 ? '19' + m[3] : '20' + m[3]) : m[3];
+        return `${y}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+    }
+    m = s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+    if (m) return `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
+    if (/^(199\d|20[0-5]\d)$/.test(s)) return `${s}-12-31`;
+    return null;
+}
+
+function extraerAnio(fechaStr, fallback) {
+    const m = String(fechaStr || '').match(/(199\d|20[0-6]\d)/);
+    return m ? parseInt(m[1], 10) : fallback;
+}
+
+// ============================================================================
+// DETECCIÓN DE COLUMNAS Y HOJAS OCULTAS EN XML (COMPATIBLE CON INDEX.HTML)
+// ============================================================================
+async function detectarColumnasOcultasXML(arrayBuffer) {
+    const cols = {};
+    const hiddenSheets = new Set();
+    try {
+        if (typeof JSZip === 'undefined') return { cols, hiddenSheets };
+        const zip = await JSZip.loadAsync(arrayBuffer);
+        const wbFile = zip.file('xl/workbook.xml');
+        const relsFile = zip.file('xl/_rels/workbook.xml.rels');
+        if (!wbFile || !relsFile) return { cols, hiddenSheets };
+
+        const parser = new DOMParser();
+        const wbDoc = parser.parseFromString(await wbFile.async('string'), 'application/xml');
+        const relsDoc = parser.parseFromString(await relsFile.async('string'), 'application/xml');
+
+        const rIdToTarget = {};
+        for (const rel of relsDoc.getElementsByTagName('Relationship')) {
+            const id = rel.getAttribute('Id');
+            let target = rel.getAttribute('Target') || '';
+            if (target.startsWith('/')) target = target.slice(1);
+            else if (!target.startsWith('xl/')) target = 'xl/' + target.replace(/^\.\//, '');
+            rIdToTarget[id] = target;
+        }
+
+        for (const sh of wbDoc.getElementsByTagName('sheet')) {
+            const name = sh.getAttribute('name');
+            const state = sh.getAttribute('state');
+            if (state === 'hidden' || state === 'veryHidden') hiddenSheets.add(name);
+            const rId = sh.getAttribute('r:id') || sh.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships', 'id');
+            const path = rIdToTarget[rId];
+            const setH = new Set();
+            if (path && zip.file(path)) {
+                const sDoc = parser.parseFromString(await zip.file(path).async('string'), 'application/xml');
+                for (const colEl of sDoc.getElementsByTagName('col')) {
+                    const hid = colEl.getAttribute('hidden') === '1' || colEl.getAttribute('hidden') === 'true';
+                    const wAttr = colEl.getAttribute('width');
+                    const zeroW = wAttr !== null && parseFloat(wAttr) === 0;
+                    if (hid || zeroW) {
+                        const minC = parseInt(colEl.getAttribute('min') || '0', 10);
+                        const maxC = Math.min(parseInt(colEl.getAttribute('max') || String(minC), 10), 400);
+                        for (let c1 = minC; c1 <= maxC; c1++) setH.add(c1 - 1);
+                    }
+                }
+            }
+            cols[name] = setH;
+        }
+    } catch (e) {
+        console.warn('Aviso XML:', e);
+    }
+    return { cols, hiddenSheets };
+}
+
+// ============================================================================
+// 1. PARSER DE ARCHIVO AFE (SINCRONIZADO CON MAPEO DE INDEX.HTML)
+// ============================================================================
+const MAPEO_ER_AFE = [
+    { key: 'VENTAS NETAS NACIONALES', patterns: ['VENTAS NETAS NACIONALES', 'VENTAS NACIONALES'] },
+    { key: 'VENTAS NETAS EXPORTACION', patterns: ['VENTAS NETAS EXPORTACION', 'VENTAS DE EXPORTACION', 'VENTAS EXPORTACION'] },
+    { key: 'VENTAS NETAS TOTALES', patterns: ['VENTAS NETAS TOTALES', 'VENTAS NETAS', 'INGRESOS TOTALES'] },
+    { key: 'COSTO DE VENTAS', patterns: ['COSTO DE VENTAS'] },
+    { key: 'GTOS DE VTA. Y ADMON.', patterns: ['GTOS DE VTA. Y ADMON', 'GTOS. DE VTA. Y ADMON', 'GASTOS DE VENTA Y ADMON', 'GASTOS DE OPERACION'] },
+    { key: 'DEPRECIACION', patterns: ['DEPRECIACION'] },
+    { key: 'AMORTIZACION', patterns: ['AMORTIZACION'] },
+    { key: 'GASTOS FINANCIEROS', patterns: ['GASTOS FINANCIEROS'] },
+    { key: 'PRODUCTOS FINANCIEROS', patterns: ['PRODUCTOS FINANCIEROS'] },
+    { key: 'PERDIDA (UTILIDAD) POS. MON.', patterns: ['POS. MON.', 'POSICION MONETARIA'] },
+    { key: 'PERDIDA (UTILIDAD) CAMBIARIA', patterns: ['CAMBIARIA'] },
+    { key: 'OTROS GASTOS (INGRESOS)', patterns: ['OTROS GASTOS (INGRESOS)', 'OTROS GASTOS Y PRODUCTOS', 'OTROS INGRESOS Y GASTOS'] },
+    { key: 'I.S.R. CAUSADO', patterns: ['I.S.R. CAUSADO', 'ISR CAUSADO', 'IMPUESTOS A LA UTILIDAD', 'I.S.R.'] },
+    { key: 'P.T.U. CAUSADO', patterns: ['P.T.U. CAUSADO', 'PTU CAUSADO', 'P.T.U.'] },
+    { key: 'IMPUESTOS Y PTU DIFERIDOS', patterns: ['IMPUESTOS Y PTU DIFERIDOS', 'ISR Y PTU DIFERIDOS', 'IMPUESTOS DIFERIDOS'] },
+    { key: 'INVERSION EN ACTIVOS FIJOS', patterns: ['INVERSION EN ACTIVOS FIJOS', 'CAPEX'] }
+];
+
+const MAPEO_BG_AFE = [
+    { key: 'CAJA Y BANCOS', patterns: ['CAJA Y BANCOS', 'EFECTIVO Y EQUIVALENTES'], section: 'ACT_CIRC' },
+    { key: 'INVERSIONES TEMPORALES', patterns: ['INVERSIONES TEMPORALES', 'VALORES NEGOCIABLES'], section: 'ACT_CIRC' },
+    { key: 'CLIENTES Y DOCTOS X COB.', patterns: ['CLIENTES Y DOCTOS', 'CLIENTES'], section: 'ACT_CIRC' },
+    { key: 'INVENTARIOS', patterns: ['INVENTARIOS'], section: 'ACT_CIRC' },
+    { key: 'CTAS. X COBRAR A FILIALES', patterns: ['CTAS. X COBRAR A FILIALES', 'CUENTAS POR COBRAR A FILIALES'], section: 'ACT_CIRC' },
+    { key: 'PAGOS ANTICIPADOS', patterns: ['PAGOS ANTICIPADOS'], section: 'ACT_CIRC' },
+    { key: 'OTROS ACT. CIRC. OPERATIVOS', patterns: ['OTROS ACT. CIRC. OPERATIVOS'], section: 'ACT_CIRC' },
+    { key: 'DEUDORES DIVERSOS', patterns: ['DEUDORES DIVERSOS'], section: 'ACT_CIRC' },
+    { key: 'OTROS ACT. CIRC. NO OPERAT.', patterns: ['OTROS ACT. CIRC. NO OPERAT'], section: 'ACT_CIRC' },
+    { key: 'PROP. PLANTA Y EQ. NETO', patterns: ['PROP. PLANTA Y EQ', 'PROPIEDAD, PLANTA Y EQUIPO', 'ACTIVO FIJO NETO'], section: 'ACT_NO_CIRC' },
+    { key: 'INVERS. EN SUBS./AFILS.', patterns: ['INVERS. EN SUBS', 'INVERSIONES PERMANENTES'], section: 'ACT_NO_CIRC' },
+    { key: 'CTAS. X COBRAR A FILIALES (LP)', patterns: ['CTAS. X COBRAR A FILIALES', 'FILIALES (LP)'], section: 'ACT_NO_CIRC' },
+    { key: 'OTROS ACTIVOS FIJOS', patterns: ['OTROS ACTIVOS FIJOS'], section: 'ACT_NO_CIRC' },
+    { key: 'ACTIVO POR IMPUESTOS DIFERIDOS', patterns: ['ACTIVO POR IMPUESTOS DIFERIDOS', 'ACTIVO X IMPUESTOS DIFERIDOS'], section: 'ACT_NO_CIRC' },
+    { key: 'PATENTES, LIC. Y MARCAS', patterns: ['PATENTES', 'INTANGIBLES'], section: 'ACT_NO_CIRC' },
+    { key: 'CREDITO MERCANTIL', patterns: ['CREDITO MERCANTIL'], section: 'ACT_NO_CIRC' },
+    { key: 'CARGOS DIFERIDOS', patterns: ['CARGOS DIFERIDOS'], section: 'ACT_NO_CIRC' },
+    { key: 'BANCOMER CORTO PLAZO', patterns: ['BANCOMER CORTO PLAZO', 'BBVA CORTO PLAZO', 'BANCOMER C.P.'], section: 'PAS_CP' },
+    { key: 'OTROS BANCOS CORTO PLAZO', patterns: ['OTROS BANCOS CORTO PLAZO', 'OTROS BANCOS C.P.'], section: 'PAS_CP' },
+    { key: 'EMISIONES DE DEUDA (CP)', patterns: ['EMISIONES DE DEUDA'], section: 'PAS_CP' },
+    { key: 'PORC. CIRC. LP BANCOMER', patterns: ['PORC. CIRC. LP BANCOMER', 'PORC. CIRC. LP BBVA'], section: 'PAS_CP' },
+    { key: 'PORC. CIRC. LP OTROS BANCOS', patterns: ['PORC. CIRC. LP OTROS'], section: 'PAS_CP' },
+    { key: 'PROVEEDORES', patterns: ['PROVEEDORES'], section: 'PAS_CP' },
+    { key: 'IMPUESTOS POR PAGAR', patterns: ['IMPUESTOS POR PAGAR', 'IMPUESTOS X PAGAR'], section: 'PAS_CP' },
+    { key: 'CUENTAS X PAGAR FILIALES', patterns: ['CUENTAS X PAGAR FILIALES', 'CTAS. X PAGAR A FILIALES'], section: 'PAS_CP' },
+    { key: 'GASTOS ACUMULADOS', patterns: ['GASTOS ACUMULADOS', 'ACREEDORES DIVERSOS'], section: 'PAS_CP' },
+    { key: 'OTROS PAS. CIRC. OPERATIVOS', patterns: ['OTROS PAS. CIRC. OPERATIVOS'], section: 'PAS_CP' },
+    { key: 'OTROS PAS. CIRC. NO OPERAT.', patterns: ['OTROS PAS. CIRC. NO OPERAT'], section: 'PAS_CP' },
+    { key: 'BANCOMER LARGO PLAZO', patterns: ['BANCOMER LARGO PLAZO', 'BBVA LARGO PLAZO', 'BANCOMER L.P.'], section: 'PAS_LP' },
+    { key: 'OTROS BANCOS LARGO PLAZO', patterns: ['OTROS BANCOS LARGO PLAZO', 'OTROS BANCOS L.P.'], section: 'PAS_LP' },
+    { key: 'EMISIONES DE DEUDA (LP)', patterns: ['EMISIONES DE DEUDA'], section: 'PAS_LP' },
+    { key: 'CUENTAS X PAGAR FILIALES (LP)', patterns: ['CUENTAS X PAGAR FILIALES', 'CTAS. X PAGAR FILIALES'], section: 'PAS_LP' },
+    { key: 'OTROS PASIVOS LARGO PZO.', patterns: ['OTROS PASIVOS LARGO', 'OTROS PASIVOS L.P.'], section: 'PAS_LP' },
+    { key: 'PRIMAS DE ANTIGUEDAD', patterns: ['PRIMAS DE ANTIGUEDAD'], section: 'PAS_LP' },
+    { key: 'PASIVOS DIFERIDOS', patterns: ['PASIVOS DIFERIDOS'], section: 'PAS_LP' },
+    { key: 'PASIVO X IMPUESTOS DIFERIDOS', patterns: ['PASIVO X IMPUESTOS DIFERIDOS', 'PASIVO POR IMPUESTOS DIFERIDOS'], section: 'PAS_LP' },
+    { key: 'CAPITAL SOCIAL ACTUALIZADO', patterns: ['CAPITAL SOCIAL ACTUALIZADO', 'CAPITAL SOCIAL'], section: 'CAPITAL' },
+    { key: 'APORT. PEND. DE CAPITALIZAR', patterns: ['APORT. PEND. DE CAPITALIZAR', 'APORTACIONES PARA FUTUROS'], section: 'CAPITAL' },
+    { key: 'PRIMA EN EMISION DE ACCIONES', patterns: ['PRIMA EN EMISION'], section: 'CAPITAL' },
+    { key: 'INTERES MINORITARIO', patterns: ['INTERES MINORITARIO'], section: 'CAPITAL' },
+    { key: 'EXC(INSUF) EN LA ACT. CC', patterns: ['EXC(INSUF)', 'EXCESO O INSUFICIENCIA'], section: 'CAPITAL' },
+    { key: 'IMPACTO ISR DIFERIDO', patterns: ['IMPACTO ISR DIFERIDO'], section: 'CAPITAL' },
+    { key: 'RESERVAS', patterns: ['RESERVAS', 'RESERVA LEGAL'], section: 'CAPITAL' },
+    { key: 'UTILIDADES RETENIDAS', patterns: ['UTILIDADES RETENIDAS', 'RESULTADOS ACUMULADOS'], section: 'CAPITAL' }
+];
+
+function procesarArchivoAFE(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    document.getElementById('lbl-file-afe').innerText = file.name;
+    document.getElementById('pill-status-afe').innerText = 'Analizando...';
+
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        try {
+            const buf = e.target.result;
+            const infoH = await detectarColumnasOcultasXML(buf);
+            ESTADO.ocultasAFE = infoH.cols || {};
+            ESTADO.hojasOcultasAFE = infoH.hiddenSheets || new Set();
+
+            ESTADO.wbAFE = XLSX.read(new Uint8Array(buf), { type: 'array', cellDates: false });
+            if (ESTADO.wbAFE.Workbook && Array.isArray(ESTADO.wbAFE.Workbook.Sheets)) {
+                ESTADO.wbAFE.Workbook.Sheets.forEach(s => {
+                    if (s && s.Hidden && s.Hidden !== 0 && s.name) ESTADO.hojasOcultasAFE.add(s.name);
+                });
+            }
+
+            const sel = document.getElementById('select-hoja-afe');
+            sel.innerHTML = '';
+            let mejorHoja = null, mejorScore = -1;
+
+            ESTADO.wbAFE.SheetNames.forEach(name => {
+                if (ESTADO.hojasOcultasAFE.has(name)) return;
+                const rows = XLSX.utils.sheet_to_json(ESTADO.wbAFE.Sheets[name], { header: 1, raw: true, defval: '' });
+                let sc = 0;
+                for (let r = 0; r < Math.min(rows.length, 200); r++) {
+                    const txt = (rows[r] || []).map(normTxt).join(' ');
+                    if (txt.includes('VENTAS NETAS')) sc += 4;
+                    if (txt.includes('COSTO DE VENTAS')) sc += 4;
+                    if (txt.includes('CAJA Y BANCOS')) sc += 4;
+                    if (txt.includes('PROVEEDORES')) sc += 3;
+                    if (txt.includes('CAPITAL SOCIAL')) sc += 3;
+                }
+                if (sc > mejorScore) { mejorScore = sc; mejorHoja = name; }
+                const opt = document.createElement('option');
+                opt.value = name;
+                opt.textContent = name + (sc >= 8 ? ' (AFE)' : '');
+                sel.appendChild(opt);
+            });
+
+            if (!mejorHoja && ESTADO.wbAFE.SheetNames.length) mejorHoja = ESTADO.wbAFE.SheetNames[0];
+            sel.value = mejorHoja;
+            sel.classList.toggle('hidden', sel.options.length <= 1);
+            extraerHojaAFE(mejorHoja);
+        } catch (err) {
+            alert('Error al leer el archivo AFE: ' + err.message);
+        }
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+function cambiarHojaAFE() {
+    const hoja = document.getElementById('select-hoja-afe').value;
+    if (ESTADO.wbAFE && hoja) extraerHojaAFE(hoja);
+}
+
+function extraerHojaAFE(sheetName) {
+    const ws = ESTADO.wbAFE.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: '' });
+    const colsMeta = ws['!cols'] || [];
+    const setH = ESTADO.ocultasAFE[sheetName] || new Set();
+
+    const esOculta = c => setH.has(c) || (colsMeta[c] && (colsMeta[c].hidden === true || colsMeta[c].hidden === 1 || colsMeta[c].width === 0));
+
+    // Empresa
+    for (let r = 0; r < Math.min(rows.length, 18); r++) {
+        const row = rows[r] || [];
+        for (let c = 0; c < Math.min(row.length, 10); c++) {
+            if (esOculta(c)) continue;
+            const t = normTxt(row[c]);
+            if (t.includes('EMPRESA') || t.includes('RAZON SOCIAL') || t.includes('ACREDITADO')) {
+                for (let k = c + 1; k < Math.min(c + 6, row.length); k++) {
+                    const v = String(row[k] || '').trim();
+                    if (v.length > 2 && normTxt(v) !== 'NINGUNO' && v !== '0') {
+                        ESTADO.empresa = v;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    const mapER = {}, mapBG = {};
+    let secBG = 'ACT_CIRC', colConcepto = 0, filaMonto = -1, filaEjNum = -1;
+    const countCol = {};
+
+    for (let r = 0; r < rows.length; r++) {
+        const row = rows[r] || [];
+        for (let c = 0; c < Math.min(row.length, 10); c++) {
+            if (esOculta(c)) continue;
+            const t = normTxt(row[c]);
+            if (!t) continue;
+            if (t === 'EJERCICIO NUMERO') filaEjNum = r;
+            if (filaMonto === -1 && t === 'MONTO') filaMonto = r;
+            if (t.includes('TOTAL ACT. CIRCULANTE') || t.includes('TOTAL ACTIVO CIRCULANTE')) secBG = 'ACT_NO_CIRC';
+            else if (t === 'PASIVO' || t === 'BANCOMER CORTO PLAZO') { if (secBG === 'ACT_NO_CIRC') secBG = 'PAS_CP'; }
+            else if (t.includes('TOTAL PASIVO C.P.') || t.includes('TOTAL PASIVO CORTO PLAZO')) secBG = 'PAS_LP';
+            else if (t.includes('TOTAL PASIVO L.P.') || t === 'TOTAL PASIVO' || t.includes('CAPITAL CONTABLE')) secBG = 'CAPITAL';
+
+            if (t.length < 4) continue;
+            MAPEO_ER_AFE.forEach(item => {
+                if (mapER[item.key] !== undefined) return;
+                if (item.patterns.some(p => t.includes(p))) {
+                    mapER[item.key] = { row: r, labelCol: c };
+                    countCol[c] = (countCol[c] || 0) + 1;
+                }
+            });
+            MAPEO_BG_AFE.forEach(item => {
+                if (mapBG[item.key] !== undefined) return;
+                if (item.section && item.section !== secBG) return;
+                if (item.patterns.some(p => t.includes(p))) {
+                    mapBG[item.key] = { row: r, labelCol: c };
+                    countCol[c] = (countCol[c] || 0) + 1;
+                }
+            });
+        }
+    }
+
+    let maxC = 0;
+    Object.entries(countCol).forEach(([k, v]) => { if (v > maxC) { maxC = v; colConcepto = parseInt(k, 10); } });
+
+    let filaFecha = -1, filaPesos = -1, filaMeses = -1, filaInf = -1;
+    for (let r = 0; r < Math.min(rows.length, 30); r++) {
+        const s = (rows[r] || []).slice(0, colConcepto + 3).map(normTxt).join(' ');
+        if (filaFecha === -1 && s.includes('FECHA')) filaFecha = r;
+        if (filaPesos === -1 && s.includes('PESOS DE')) filaPesos = r;
+        if (filaMeses === -1 && (s.includes('MESES') || s.includes('TIPO EJERCICIO'))) filaMeses = r;
+        if (filaInf === -1 && s.includes('INFLACION')) filaInf = r;
+    }
+
+    const esAnual12 = c => {
+        if (filaMeses === -1) return true;
+        const v = (rows[filaMeses] || [])[c];
+        if (v === '' || v === null || v === undefined) return false;
+        if (typeof v === 'number') return Math.abs(v - 12) < 0.01;
+        const t = normTxt(v);
+        if (t.includes('PARCIAL')) return false;
+        const m = t.match(/(\d+)/);
+        if (m) return parseInt(m[1], 10) === 12;
+        return t.includes('ANUAL');
+    };
+
+    let colsCand = [];
+    if (filaMonto !== -1) {
+        const rM = rows[filaMonto] || [];
+        for (let c = colConcepto + 1; c < rM.length; c++) {
+            if (esOculta(c) || normTxt(rM[c]) !== 'MONTO') continue;
+            if (filaEjNum !== -1 && (normTxt((rows[filaEjNum] || [])[c]) === '0' || !rows[filaEjNum][c])) continue;
+            if (!esAnual12(c)) continue;
+            let f = filaFecha !== -1 ? parseFechaExcel((rows[filaFecha] || [])[c]) : null;
+            if (!f && filaPesos !== -1) {
+                const yr = parseInt(String((rows[filaPesos] || [])[c] || '').trim(), 10);
+                if (yr >= 1990 && yr <= 2060) f = `${yr}-12-31`;
+            }
+            if (f) colsCand.push({ col: c, fechaCierre: f });
+        }
+    } else {
+        for (let r = 0; r < Math.min(rows.length, 25); r++) {
+            const temp = [];
+            const row = rows[r] || [];
+            for (let c = colConcepto + 1; c < row.length; c++) {
+                if (esOculta(c) || !esAnual12(c)) continue;
+                const f = parseFechaExcel(row[c]);
+                if (f) temp.push({ col: c, fechaCierre: f });
+            }
+            if (temp.length > colsCand.length) colsCand = temp;
+        }
+    }
+
+    const extraidos = [];
+    const vistas = new Set();
+
+    colsCand.forEach(ci => {
+        const c = ci.col;
+        const rawER = {}, rawBG = {};
+        Object.entries(mapER).forEach(([k, pos]) => { rawER[k] = parseNum((rows[pos.row] || [])[c]); });
+        Object.entries(mapBG).forEach(([k, pos]) => {
+            const colV = pos.labelCol > colConcepto + 4 ? (pos.labelCol + (c - colConcepto)) : c;
+            rawBG[k] = parseNum((rows[pos.row] || [])[colV]);
+        });
+        if (!rawER['VENTAS NETAS NACIONALES'] && !rawER['VENTAS NETAS EXPORTACION'] && rawER['VENTAS NETAS TOTALES']) {
+            rawER['VENTAS NETAS NACIONALES'] = rawER['VENTAS NETAS TOTALES'];
+        }
+        const act = Math.abs(rawER['VENTAS NETAS NACIONALES'] || 0) + Math.abs(rawER['VENTAS NETAS EXPORTACION'] || 0) + Math.abs(rawBG['CAJA Y BANCOS'] || 0) + Math.abs(rawBG['PROP. PLANTA Y EQ. NETO'] || 0);
+        if (act > 0 && !vistas.has(ci.fechaCierre)) {
+            vistas.add(ci.fechaCierre);
+            let inf = filaInf !== -1 ? parseNum((rows[filaInf] || [])[c]) : 4.5;
+            if (inf > 0 && inf < 1) inf = +(inf * 100).toFixed(2);
+            extraidos.push(normalizarEjercicioAFE({
+                metadata: { fechaCierre: ci.fechaCierre, inflacion: inf || 4.5 },
+                er: rawER,
+                bg: rawBG
+            }));
+        }
+    });
+
+    if (extraidos.length === 0) {
+        alert(`No se detectaron ejercicios anuales (12 meses) con datos en la hoja "${sheetName}". Prueba seleccionar otra hoja.`);
+        return;
+    }
+
+    extraidos.sort((a, b) => (a.metadata.fechaCierre || '').localeCompare(b.metadata.fechaCierre || ''));
+    ESTADO.ejerciciosAFE = extraidos;
+    actualizarUIArchivoAFE();
+}
+
+function normalizarEjercicioAFE(ej) {
+    const er = Object.assign({}, ej.er || {});
+    const bg = Object.assign({}, ej.bg || {});
+    const vNac = parseNum(er['VENTAS NETAS NACIONALES']);
+    const vExp = parseNum(er['VENTAS NETAS EXPORTACION']);
+    const vTot = (vNac + vExp) || parseNum(er['VENTAS NETAS TOTALES']);
+    const cVtas = parseNum(er['COSTO DE VENTAS']);
+    const uBruta = vTot - cVtas;
+    const gtosOp = parseNum(er['GTOS DE VTA. Y ADMON.']);
+    const depr = parseNum(er['DEPRECIACION']);
+    const amort = parseNum(er['AMORTIZACION']);
+    const uafir = uBruta - gtosOp - depr - amort;
+    const uafirda = uafir + depr + amort;
+    const gtosFin = parseNum(er['GASTOS FINANCIEROS']);
+    const prodFin = parseNum(er['PRODUCTOS FINANCIEROS']);
+    const posMon = parseNum(er['PERDIDA (UTILIDAD) POS. MON.']);
+    const camb = parseNum(er['PERDIDA (UTILIDAD) CAMBIARIA']);
+    const cif = gtosFin - prodFin + posMon + camb;
+    const otrosGtos = parseNum(er['OTROS GASTOS (INGRESOS)']);
+    const uai = uafir - cif - otrosGtos;
+    const isr = parseNum(er['I.S.R. CAUSADO']);
+    const ptu = parseNum(er['P.T.U. CAUSADO']);
+    const impDif = parseNum(er['IMPUESTOS Y PTU DIFERIDOS']);
+    const impTot = isr + ptu + impDif;
+    const utNeta = uai - impTot;
+
+    er['VENTAS NETAS NACIONALES'] = vNac || vTot;
+    er['VENTAS NETAS EXPORTACION'] = vExp;
+    er['VENTAS NETAS TOTALES'] = vTot;
+    er['COSTO DE VENTAS'] = cVtas;
+    er['UTILIDAD BRUTA'] = uBruta;
+    er['GTOS DE VTA. Y ADMON.'] = gtosOp;
+    er['DEPRECIACION'] = depr;
+    er['AMORTIZACION'] = amort;
+    er['U A F I R'] = uafir;
+    er['UAFIRDA'] = uafirda;
+    er['GASTOS FINANCIEROS'] = gtosFin;
+    er['PRODUCTOS FINANCIEROS'] = prodFin;
+    er['COSTO INTEGRAL FINANCIERO'] = cif;
+    er['OTROS GASTOS (INGRESOS)'] = otrosGtos;
+    er['UTILIDAD ANTES DE ISR Y PTU'] = uai;
+    er['IMPUESTOS TOTALES'] = impTot;
+    er['UTILIDAD NETA'] = utNeta;
+    er['INVERSION EN ACTIVOS FIJOS'] = parseNum(er['INVERSION EN ACTIVOS FIJOS']);
+
+    // Agrupaciones limpias de Balance General
+    const caja = parseNum(bg['CAJA Y BANCOS']);
+    const invTemp = parseNum(bg['INVERSIONES TEMPORALES']);
+    const clientes = parseNum(bg['CLIENTES Y DOCTOS X COB.']);
+    const inventarios = parseNum(bg['INVENTARIOS']);
+    const otrosActCirc = parseNum(bg['CTAS. X COBRAR A FILIALES']) + parseNum(bg['PAGOS ANTICIPADOS']) +
+                         parseNum(bg['OTROS ACT. CIRC. OPERATIVOS']) + parseNum(bg['DEUDORES DIVERSOS']) +
+                         parseNum(bg['OTROS ACT. CIRC. NO OPERAT.']);
+    const totActCirc = caja + invTemp + clientes + inventarios + otrosActCirc;
+
+    const ppe = parseNum(bg['PROP. PLANTA Y EQ. NETO']);
+    const otrosActFijos = parseNum(bg['INVERS. EN SUBS./AFILS.']) + parseNum(bg['CTAS. X COBRAR A FILIALES (LP)']) +
+                          parseNum(bg['OTROS ACTIVOS FIJOS']);
+    const otrosActDif = parseNum(bg['ACTIVO POR IMPUESTOS DIFERIDOS']) + parseNum(bg['PATENTES, LIC. Y MARCAS']) +
+                        parseNum(bg['CREDITO MERCANTIL']) + parseNum(bg['CARGOS DIFERIDOS']);
+    const totActNoCirc = ppe + otrosActFijos + otrosActDif;
+    const totActivo = totActCirc + totActNoCirc;
+
+    const deudaCP = parseNum(bg['BANCOMER CORTO PLAZO']) + parseNum(bg['OTROS BANCOS CORTO PLAZO']) + parseNum(bg['EMISIONES DE DEUDA (CP)']);
+    const porcCircLP = parseNum(bg['PORC. CIRC. LP BANCOMER']) + parseNum(bg['PORC. CIRC. LP OTROS BANCOS']);
+    const proveedores = parseNum(bg['PROVEEDORES']);
+    const otrosPasCP = parseNum(bg['IMPUESTOS POR PAGAR']) + parseNum(bg['CUENTAS X PAGAR FILIALES']) +
+                       parseNum(bg['GASTOS ACUMULADOS']) + parseNum(bg['OTROS PAS. CIRC. OPERATIVOS']) +
+                       parseNum(bg['OTROS PAS. CIRC. NO OPERAT.']);
+    const totPasCP = deudaCP + porcCircLP + proveedores + otrosPasCP;
+
+    const deudaLP = parseNum(bg['BANCOMER LARGO PLAZO']) + parseNum(bg['OTROS BANCOS LARGO PLAZO']) + parseNum(bg['EMISIONES DE DEUDA (LP)']);
+    const otrosPasLP = parseNum(bg['CUENTAS X PAGAR FILIALES (LP)']) + parseNum(bg['OTROS PASIVOS LARGO PZO.']) +
+                       parseNum(bg['PRIMAS DE ANTIGUEDAD']) + parseNum(bg['PASIVOS DIFERIDOS']) +
+                       parseNum(bg['PASIVO X IMPUESTOS DIFERIDOS']);
+    const totPasLP = deudaLP + otrosPasLP;
+    const totPasivo = totPasCP + totPasLP;
+
+    const capSocial = parseNum(bg['CAPITAL SOCIAL ACTUALIZADO']) + parseNum(bg['APORT. PEND. DE CAPITALIZAR']) +
+                      parseNum(bg['PRIMA EN EMISION DE ACCIONES']) + parseNum(bg['INTERES MINORITARIO']) +
+                      parseNum(bg['EXC(INSUF) EN LA ACT. CC']) + parseNum(bg['IMPACTO ISR DIFERIDO']) +
+                      parseNum(bg['RESERVAS']);
+    const utilRet = parseNum(bg['UTILIDADES RETENIDAS']);
+    const totCapital = capSocial + utilRet + utNeta;
+
+    return {
+        metadata: ej.metadata || { fechaCierre: '2025-12-31', inflacion: 4.5 },
+        er,
+        bg,
+        resumenBG: {
+            caja, invTemp, clientes, inventarios, otrosActCirc, totActCirc,
+            ppe, otrosActNoCirc: otrosActFijos + otrosActDif, totActNoCirc, totActivo,
+            deudaCP, porcCircLP, proveedores, otrosPasCP, totPasCP,
+            deudaLP, otrosPasLP, totPasLP, totPasivo,
+            capSocial, utilRet, utilEjercicio: utNeta, totCapital,
+            deudaFinTotal: deudaCP + porcCircLP + deudaLP
+        }
+    };
+}
+
+function actualizarUIArchivoAFE() {
+    const n = ESTADO.ejerciciosAFE.length;
+    document.getElementById('dropzone-afe').classList.add('loaded');
+    const pill = document.getElementById('pill-status-afe');
+    pill.className = 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800';
+    pill.innerText = `✓ ${n} ejercicio(s) cargados`;
+
+    document.getElementById('detalle-afe-cargado').classList.remove('hidden');
+    document.getElementById('txt-resumen-afe').innerText = `✓ Se extrajeron ${n} ejercicio(s) anuales de 12 meses del AFE.`;
+    document.getElementById('chips-anios-afe').innerHTML = ESTADO.ejerciciosAFE.map(e =>
+        `<span class="bg-blue-100 text-bbva-navy px-2 py-0.5 rounded font-bold">${e.metadata.fechaCierre}</span>`
+    ).join('');
+
+    if (ESTADO.empresa) {
+        document.getElementById('lbl-empresa-proy').innerText = ESTADO.empresa.toUpperCase();
+    }
+}
+
+// ============================================================================
+// 2. PARSER DE ARCHIVO CUADRO DE PASIVOS (PARA EL MÓDULO DE CRÉDITO)
+// ============================================================================
+function procesarArchivoPasivos(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    document.getElementById('lbl-file-pasivos').innerText = file.name;
+    document.getElementById('pill-status-pasivos').innerText = 'Analizando...';
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            ESTADO.wbPasivos = XLSX.read(new Uint8Array(e.target.result), { type: 'array', cellDates: false });
+            const sel = document.getElementById('select-hoja-pasivos');
+            sel.innerHTML = '';
+            let mejor = ESTADO.wbPasivos.SheetNames[0], mejorSc = -1;
+
+            ESTADO.wbPasivos.SheetNames.forEach(name => {
+                const rows = XLSX.utils.sheet_to_json(ESTADO.wbPasivos.Sheets[name], { header: 1, raw: true, defval: '' });
+                let sc = 0;
+                for (let r = 0; r < Math.min(rows.length, 40); r++) {
+                    const txt = (rows[r] || []).map(normTxt).join(' ');
+                    if (txt.includes('BANCO') || txt.includes('INSTITUCION') || txt.includes('ACREEDOR')) sc += 4;
+                    if (txt.includes('SALDO') || txt.includes('IMPORTE') || txt.includes('MONTO')) sc += 4;
+                    if (txt.includes('TASA') || txt.includes('INTERES') || txt.includes('TIIE')) sc += 3;
+                    if (txt.includes('PLAZO') || txt.includes('VENCIMIENTO') || txt.includes('AMORTIZACION')) sc += 3;
+                }
+                if (sc > mejorSc) { mejorSc = sc; mejor = name; }
+                const opt = document.createElement('option');
+                opt.value = name;
+                opt.textContent = name;
+                sel.appendChild(opt);
+            });
+
+            sel.value = mejor;
+            sel.classList.toggle('hidden', sel.options.length <= 1);
+            extraerHojaPasivos(mejor);
+        } catch (err) {
+            alert('Error al leer Cuadro de Pasivos: ' + err.message);
+        }
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+function cambiarHojaPasivos() {
+    const h = document.getElementById('select-hoja-pasivos').value;
+    if (ESTADO.wbPasivos && h) extraerHojaPasivos(h);
+}
+
+function extraerHojaPasivos(sheetName) {
+    const rows = XLSX.utils.sheet_to_json(ESTADO.wbPasivos.Sheets[sheetName], { header: 1, raw: true, defval: '' });
+
+    // Localizar fila de encabezados de tabla de pasivos
+    let headerRow = -1;
+    let cols = { institucion: -1, tipo: -1, saldo: -1, tasa: -1, plazo: -1, vencimiento: -1, amortAnual: -1 };
+
+    for (let r = 0; r < Math.min(rows.length, 35); r++) {
+        const row = rows[r] || [];
+        const temp = { institucion: -1, tipo: -1, saldo: -1, tasa: -1, plazo: -1, vencimiento: -1, amortAnual: -1 };
+        let hits = 0;
+        row.forEach((cell, c) => {
+            const t = normTxt(cell);
+            if (!t) return;
+            if (temp.institucion === -1 && (t.includes('BANCO') || t.includes('INSTITUCION') || t.includes('ACREEDOR') || t.includes('FINANCIERA') || t.includes('INST.'))) { temp.institucion = c; hits++; }
+            else if (temp.tipo === -1 && (t.includes('TIPO') || t.includes('PRODUCTO') || t.includes('CREDITO') || t.includes('LINEA') || t.includes('DESTINO'))) { temp.tipo = c; hits++; }
+            else if (temp.saldo === -1 && (t.includes('SALDO') || t.includes('DISPUESTO') || t.includes('MONTO') || t.includes('IMPORTE') || t.includes('PRINCIPAL'))) { temp.saldo = c; hits++; }
+            else if (temp.tasa === -1 && (t.includes('TASA') || t.includes('INTERES') || t.includes('TIIE') || t.includes('COSTO'))) { temp.tasa = c; hits++; }
+            else if (temp.plazo === -1 && (t.includes('PLAZO') || t.includes('MESES') || t.includes('ANIOS') || t.includes('AÑOS'))) { temp.plazo = c; hits++; }
+            else if (temp.vencimiento === -1 && (t.includes('VENC') || t.includes('TERMINO'))) { temp.vencimiento = c; hits++; }
+            else if (temp.amortAnual === -1 && (t.includes('AMORT') || t.includes('PAGO ANUAL') || t.includes('CAPITAL ANUAL'))) { temp.amortAnual = c; hits++; }
+        });
+        if (hits >= 2 && temp.saldo !== -1) {
+            headerRow = r;
+            cols = temp;
+            break;
+        }
+    }
+
+    const creditosDetectados = [];
+    if (headerRow !== -1) {
+        for (let r = headerRow + 1; r < rows.length; r++) {
+            const row = rows[r] || [];
+            const inst = cols.institucion !== -1 ? String(row[cols.institucion] || '').trim() : '';
+            const instNorm = normTxt(inst);
+            if (!inst && cols.tipo === -1) continue;
+            if (instNorm.includes('TOTAL') || instNorm.includes('SUBTOTAL') || instNorm.includes('SUMA')) continue;
+
+            const saldo = parseNum(row[cols.saldo]);
+            if (saldo <= 0) continue;
+
+            const tipoTxt = cols.tipo !== -1 ? normTxt(row[cols.tipo]) : '';
+            let categoria = 'LP';
+            if (tipoTxt.includes('REVOLV') || tipoTxt.includes('REV')) categoria = 'REVOLVENTE';
+            else if (tipoTxt.includes('CORTO') || tipoTxt.includes('C.P.') || tipoTxt.includes('CP') || tipoTxt.includes('QUIROGRAF')) categoria = 'CP';
+
+            // Tasa
+            let tasa = cols.tasa !== -1 ? parseNum(row[cols.tasa]) : 12.5;
+            if (tasa > 0 && tasa < 0.6) tasa = +(tasa * 100).toFixed(2); // Ej. 0.125 -> 12.5%
+            if (tasa <= 0) {
+                const rawTasaStr = cols.tasa !== -1 ? normTxt(row[cols.tasa]) : '';
+                if (rawTasaStr.includes('TIIE')) {
+                    const mSp = rawTasaStr.match(/\+\s*(\d+(\.\d+)?)/);
+                    tasa = +(10.0 + (mSp ? parseFloat(mSp[1]) : 3.0)).toFixed(2);
+                } else {
+                    tasa = 12.5;
+                }
+            }
+
+            // Plazo remanente en años
+            let plazoAnios = categoria === 'CP' ? 1 : (categoria === 'REVOLVENTE' ? 1 : 4);
+            if (cols.plazo !== -1 && row[cols.plazo] !== '') {
+                const rawPl = parseNum(row[cols.plazo]);
+                const hdrPl = normTxt((rows[headerRow] || [])[cols.plazo]);
+                if (rawPl > 0) {
+                    if (hdrPl.includes('MES') || rawPl > 15) plazoAnios = Math.max(1, Math.round(rawPl / 12));
+                    else plazoAnios = Math.max(1, Math.round(rawPl));
+                }
+            } else if (cols.vencimiento !== -1 && row[cols.vencimiento]) {
+                const fV = parseFechaExcel(row[cols.vencimiento]);
+                if (fV) {
+                    const yrV = extraerAnio(fV, ESTADO.anioBase + 3);
+                    plazoAnios = Math.max(1, yrV - ESTADO.anioBase);
+                }
+            }
+
+            if (plazoAnios <= 1 && categoria === 'LP') categoria = 'CP';
+
+            creditosDetectados.push({
+                id: 'cr_' + Math.random().toString(36).slice(2, 8),
+                origen: 'EXISTENTE',
+                institucion: inst || (tipoTxt || `Acreedor ${creditosDetectados.length + 1}`),
+                tipo: categoria,
+                saldoInicial: saldo,
+                tasaAnual: tasa,
+                plazoAnios: plazoAnios,
+                aniosGracia: 0,
+                anioDisposicion: 0 // 0 = ya existe en Año Base
+            });
+        }
+    }
+
+    if (creditosDetectados.length === 0) {
+        alert(`No se reconocieron filas con Saldo > 0 en la hoja "${sheetName}". Puedes elegir otra hoja o capturar los créditos manualmente en la pestaña Crédito.`);
+        return;
+    }
+
+    ESTADO.creditos = creditosDetectados;
+    actualizarUIArchivoPasivos();
+
+    if (ESTADO.proyeccion) {
+        recalcularYRenderizarTodo();
+    }
+}
+
+function actualizarUIArchivoPasivos() {
+    const n = ESTADO.creditos.filter(c => c.origen === 'EXISTENTE').length;
+    const totalSaldo = ESTADO.creditos.filter(c => c.origen === 'EXISTENTE').reduce((s, c) => s + (c.saldoInicial || 0), 0);
+
+    document.getElementById('dropzone-pasivos').classList.add('loaded');
+    const pill = document.getElementById('pill-status-pasivos');
+    pill.className = 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800';
+    pill.innerText = `✓ ${n} crédito(s) • $${fmtNum(totalSaldo)}`;
+
+    document.getElementById('detalle-pasivos-cargado').classList.remove('hidden');
+    document.getElementById('txt-resumen-pasivos').innerText = `✓ Se extrajeron ${n} pasivos financieros (Saldo total: $${fmtNum(totalSaldo)}).`;
+    document.getElementById('chips-pasivos').innerHTML = ESTADO.creditos.slice(0, 6).map(c =>
+        `<span class="bg-teal-100 text-[#0F5C6E] px-2 py-0.5 rounded font-bold">${c.institucion}: $${fmtNum(c.saldoInicial)} (${c.tasaAnual}%)</span>`
+    ).join('');
+}
+
+// ============================================================================
+// 3. ANÁLISIS HISTÓRICO YoY DEL AFE -> CÁLCULO AUTOMÁTICO DE PARÁMETROS
+// ============================================================================
+function analizarHistoricoAFE(ejList) {
+    const analisis = ejList.map((ej, idx) => {
+        const er = ej.er;
+        const bg = ej.resumenBG;
+        const vTot = er['VENTAS NETAS TOTALES'] || 0;
+        const cVtas = er['COSTO DE VENTAS'] || 0;
+        const gtosOp = er['GTOS DE VTA. Y ADMON.'] || 0;
+        const depr = er['DEPRECIACION'] || 0;
+        const amort = er['AMORTIZACION'] || 0;
+        const uai = er['UTILIDAD ANTES DE ISR Y PTU'] || 0;
+        const imp = er['IMPUESTOS TOTALES'] || 0;
+
+        let crecVentas = null;
+        let capexEst = er['INVERSION EN ACTIVOS FIJOS'] || 0;
+        if (idx > 0) {
+            const prev = ejList[idx - 1];
+            const vPrev = prev.er['VENTAS NETAS TOTALES'] || 0;
+            if (vPrev > 0) crecVentas = ((vTot / vPrev) - 1) * 100;
+            if (capexEst <= 0) {
+                const diffPPE = (bg.ppe - prev.resumenBG.ppe) + depr;
+                if (diffPPE > 0) capexEst = diffPPE;
+            }
+        }
+
+        const tasaImp = uai > 0 ? Math.min(45, Math.max(0, (imp / uai) * 100)) : 30;
+        const tasaDepr = bg.ppe > 0 ? Math.min(30, Math.max(0, (depr / bg.ppe) * 100)) : 8;
+
+        return {
+            fecha: ej.metadata.fechaCierre,
+            ventas: vTot,
+            crecVentas,
+            costoVentasPct: vTot > 0 ? (cVtas / vTot) * 100 : 65,
+            gtosOpPct: vTot > 0 ? (gtosOp / vTot) * 100 : 18,
+            deprPpePct: tasaDepr,
+            amortMonto: amort,
+            diasClientes: vTot > 0 ? (bg.clientes / vTot) * 360 : 45,
+            diasInventarios: cVtas > 0 ? (bg.inventarios / cVtas) * 360 : 45,
+            diasProveedores: cVtas > 0 ? (bg.proveedores / cVtas) * 360 : 40,
+            capexPct: vTot > 0 ? (capexEst / vTot) * 100 : 2.5,
+            tasaImpuestos: tasaImp,
+            inflacion: ej.metadata.inflacion || 4.5,
+            tasaInversionCaja: 6.0,
+            dividendosPct: 0
+        };
+    });
+
+    const prom = (campo, defVal) => {
+        const vals = analisis.map(a => a[campo]).filter(v => v !== null && v !== undefined && isFinite(v));
+        if (!vals.length) return defVal;
+        return +(vals.reduce((s, x) => s + x, 0) / vals.length).toFixed(2);
+    };
+
+    const ult = analisis[analisis.length - 1] || {};
+    const promedios = {
+        crecVentas: prom('crecVentas', ult.inflacion || 6.0),
+        costoVentasPct: prom('costoVentasPct', 65.0),
+        gtosOpPct: prom('gtosOpPct', 18.0),
+        deprPpePct: prom('deprPpePct', 8.0),
+        diasClientes: Math.round(prom('diasClientes', 45)),
+        diasInventarios: Math.round(prom('diasInventarios', 45)),
+        diasProveedores: Math.round(prom('diasProveedores', 40)),
+        capexPct: prom('capexPct', 2.5),
+        tasaImpuestos: prom('tasaImpuestos', 30.0),
+        inflacion: prom('inflacion', 4.5),
+        tasaInversionCaja: 6.0,
+        dividendosPct: 0,
+        aportacionCapital: 0
+    };
+
+    const ultimo = {
+        crecVentas: ult.crecVentas !== null && isFinite(ult.crecVentas) ? +ult.crecVentas.toFixed(2) : promedios.crecVentas,
+        costoVentasPct: +(ult.costoVentasPct || 65).toFixed(2),
+        gtosOpPct: +(ult.gtosOpPct || 18).toFixed(2),
+        deprPpePct: +(ult.deprPpePct || 8).toFixed(2),
+        diasClientes: Math.round(ult.diasClientes || 45),
+        diasInventarios: Math.round(ult.diasInventarios || 45),
+        diasProveedores: Math.round(ult.diasProveedores || 40),
+        capexPct: +(ult.capexPct || 2.5).toFixed(2),
+        tasaImpuestos: +(ult.tasaImpuestos || 30).toFixed(2),
+        inflacion: +(ult.inflacion || 4.5).toFixed(2),
+        tasaInversionCaja: 6.0,
+        dividendosPct: 0,
+        aportacionCapital: 0
+    };
+
+    return { analisis, promedios, ultimo };
+}
+
+function construirCapturaBaseDesdeAFE(ej) {
+    const er = ej.er;
+    const bg = ej.resumenBG;
+    return {
+        fechaCierre: ej.metadata.fechaCierre,
+        ventasNacionales: er['VENTAS NETAS NACIONALES'] || 0,
+        ventasExportacion: er['VENTAS NETAS EXPORTACION'] || 0,
+        costoVentas: er['COSTO DE VENTAS'] || 0,
+        gtosOp: er['GTOS DE VTA. Y ADMON.'] || 0,
+        depreciacion: er['DEPRECIACION'] || 0,
+        amortizacion: er['AMORTIZACION'] || 0,
+        gastosFin: er['GASTOS FINANCIEROS'] || 0,
+        productosFin: er['PRODUCTOS FINANCIEROS'] || 0,
+        otrosGastos: er['OTROS GASTOS (INGRESOS)'] || 0,
+        impuestos: er['IMPUESTOS TOTALES'] || 0,
+
+        caja: bg.caja,
+        invTemp: bg.invTemp,
+        clientes: bg.clientes,
+        inventarios: bg.inventarios,
+        otrosActCirc: bg.otrosActCirc,
+        ppe: bg.ppe,
+        otrosActNoCirc: bg.otrosActNoCirc,
+
+        deudaCP: bg.deudaCP,
+        porcCircLP: bg.porcCircLP,
+        proveedores: bg.proveedores,
+        otrosPasCP: bg.otrosPasCP,
+        deudaLP: bg.deudaLP,
+        otrosPasLP: bg.otrosPasLP,
+
+        capSocial: bg.capSocial,
+        utilRet: bg.utilRet
+    };
+}
+
+function construirCreditosRespaldoDesdeAFE(captura) {
+    const lista = [];
+    const tasaRef = (captura.deudaCP + captura.porcCircLP + captura.deudaLP) > 0 && captura.gastosFin > 0
+        ? +Math.min(28, Math.max(6, (captura.gastosFin / (captura.deudaCP + captura.porcCircLP + captura.deudaLP)) * 100)).toFixed(2)
+        : 12.5;
+
+    if (captura.deudaCP > 0) {
+        lista.push({
+            id: 'cr_afe_cp',
+            origen: 'EXISTENTE',
+            institucion: 'Deuda Bancaria Corto Plazo (AFE)',
+            tipo: 'CP',
+            saldoInicial: captura.deudaCP,
+            tasaAnual: tasaRef,
+            plazoAnios: 1,
+            aniosGracia: 0,
+            anioDisposicion: 0
+        });
+    }
+    const lpTotal = captura.porcCircLP + captura.deudaLP;
+    if (lpTotal > 0) {
+        const plazoEst = captura.porcCircLP > 0 ? Math.max(2, Math.min(8, Math.round(lpTotal / captura.porcCircLP))) : 4;
+        lista.push({
+            id: 'cr_afe_lp',
+            origen: 'EXISTENTE',
+            institucion: 'Deuda Bancaria Largo Plazo (AFE)',
+            tipo: 'LP',
+            saldoInicial: lpTotal,
+            tasaAnual: tasaRef,
+            plazoAnios: plazoEst,
+            aniosGracia: 0,
+            anioDisposicion: 0
+        });
+    }
+    return lista;
+}
+
+// ============================================================================
+// 4. MODAL DE NÚMERO DE AÑOS Y DISPARADOR DEL MODELO
+// ============================================================================
+function abrirModalAnios() {
+    if (ESTADO.ejerciciosAFE.length === 0) {
+        alert('Primero carga tu archivo AFE (o presiona "Cargar Demo" en la barra superior para probar el simulador).');
+        return;
+    }
+    document.getElementById('input-num-anios').value = ESTADO.numAnios || 5;
+    document.getElementById('modal-anios').classList.remove('hidden');
+}
+
+function cerrarModalAnios() {
+    document.getElementById('modal-anios').classList.add('hidden');
+}
+
+function setAniosModal(n) {
+    document.getElementById('input-num-anios').value = n;
+    document.querySelectorAll('.btn-anio-preset').forEach(b => {
+        const match = b.innerText.startsWith(String(n));
+        b.classList.toggle('ct-btn-royal', match);
+        b.classList.toggle('ct-btn-soft', !match);
+    });
+}
+
+function confirmarYGenerarProyecciones() {
+    const n = Math.min(10, Math.max(1, parseInt(document.getElementById('input-num-anios').value, 10) || 5));
+    const critEl = document.querySelector('input[name="criterio-params"]:checked');
+    ESTADO.numAnios = n;
+    ESTADO.criterioInicial = critEl ? critEl.value : 'promedio';
+    cerrarModalAnios();
+
+    const ultimoEj = ESTADO.ejerciciosAFE[ESTADO.ejerciciosAFE.length - 1];
+    ESTADO.anioBase = extraerAnio(ultimoEj.metadata.fechaCierre, new Date().getFullYear());
+
+    // 1. Captura Edo. Fin. desde último ejercicio del AFE
+    if (!ESTADO.capturaBase || ESTADO.capturaBase.fechaCierre !== ultimoEj.metadata.fechaCierre) {
+        ESTADO.capturaBase = construirCapturaBaseDesdeAFE(ultimoEj);
+    }
+
+    // 2. Parámetros desde promedio YoY del AFE
+    const resHist = analizarHistoricoAFE(ESTADO.ejerciciosAFE);
+    ESTADO.analisisHistorico = resHist.analisis;
+    ESTADO.promediosAFE = resHist.promedios;
+
+    const baseParam = ESTADO.criterioInicial === 'ultimo' ? resHist.ultimo : resHist.promedios;
+    ESTADO.parametros = [];
+    for (let y = 1; y <= ESTADO.numAnios; y++) {
+        ESTADO.parametros.push(Object.assign({ anio: ESTADO.anioBase + y }, baseParam));
+    }
+
+    // 3. Crédito desde Cuadro de Pasivos (o respaldo del AFE si no se subió archivo de pasivos)
+    if (ESTADO.creditos.length === 0) {
+        ESTADO.creditos = construirCreditosRespaldoDesdeAFE(ESTADO.capturaBase);
+    }
+
+    // Mostrar resultados
+    document.getElementById('sec-resultados-proyeccion').classList.remove('hidden');
+    document.getElementById('nav-link-edo').classList.remove('hidden');
+    const btnExp = document.getElementById('btn-exportar-xlsx');
+    btnExp.disabled = false;
+    btnExp.classList.remove('opacity-50', 'cursor-not-allowed');
+
+    recalcularYRenderizarTodo();
+    document.getElementById('sec-resultados-proyeccion').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function restaurarPromediosAFE() {
+    if (!ESTADO.promediosAFE) return;
+    ESTADO.parametros = [];
+    for (let y = 1; y <= ESTADO.numAnios; y++) {
+        ESTADO.parametros.push(Object.assign({ anio: ESTADO.anioBase + y }, ESTADO.promediosAFE));
+    }
+    recalcularYRenderizarTodo();
+}
+
+// ============================================================================
+// 5. MOTOR FINANCIERO DE PROYECCIONES (EDO. FINANC. + SERVICIO DE DEUDA)
+//    Garantiza identidad contable exacta: Activo = Pasivo + Capital (Diff = 0.00)
+// ============================================================================
+function calcularCalendarioCreditos(numAnios) {
+    const consolidado = [];
+    for (let y = 1; y <= numAnios; y++) {
+        consolidado.push({
+            anio: ESTADO.anioBase + y,
+            disposiciones: 0,
+            amortizaciones: 0,
+            intereses: 0,
+            saldoFinalCP: 0,
+            porcionCircLP: 0,
+            saldoFinalLP: 0,
+            saldoFinalTotal: 0
+        });
+    }
+
+    const detallePorCredito = ESTADO.creditos.map(cr => {
+        const filas = [];
+        let saldo = cr.origen === 'EXISTENTE' ? Math.max(0, parseNum(cr.saldoInicial)) : 0;
+        const tasa = Math.max(0, parseNum(cr.tasaAnual)) / 100;
+        const plazo = Math.max(1, parseInt(cr.plazoAnios, 10) || 1);
+        const gracia = Math.max(0, parseInt(cr.aniosGracia, 10) || 0);
+        const anioDisp = cr.origen === 'NUEVO' ? Math.max(1, parseInt(cr.anioDisposicion, 10) || 1) : 0;
+        const plazoAmort = Math.max(1, plazo - gracia);
+        const cuotaAnual = cr.tipo === 'REVOLVENTE' ? 0 : (Math.max(0, parseNum(cr.saldoInicial)) / plazoAmort);
+
+        // Precalcular amortizaciones año 1..numAnios+1 para determinar Porción Circulante LP
+        const simAmort = [];
+        let sTmp = saldo;
+        for (let y = 1; y <= numAnios + 1; y++) {
+            let disp = 0;
+            if (cr.origen === 'NUEVO' && y === anioDisp) {
+                disp = Math.max(0, parseNum(cr.saldoInicial));
+                sTmp += disp;
+            }
+            let amort = 0;
+            if (sTmp > 0 && cr.tipo !== 'REVOLVENTE') {
+                const aniosTranscurridos = cr.origen === 'NUEVO' ? (y - anioDisp + 1) : y;
+                if (aniosTranscurridos > gracia) {
+                    if (cr.tipo === 'CP') amort = sTmp;
+                    else amort = Math.min(sTmp, cuotaAnual);
+                }
+            }
+            simAmort.push({ disp, amort, saldoIni: sTmp, saldoFin: Math.max(0, sTmp - amort) });
+            sTmp = Math.max(0, sTmp - amort);
+        }
+
+        for (let y = 1; y <= numAnios; y++) {
+            const step = simAmort[y - 1];
+            const nextStep = simAmort[y];
+            const saldoProm = (step.saldoIni + step.saldoFin) / 2;
+            const interes = saldoProm * tasa;
+
+            let sCP = 0, pCirc = 0, sLP = 0;
+            if (cr.tipo === 'CP' || cr.tipo === 'REVOLVENTE') {
+                sCP = step.saldoFin;
+            } else {
+                pCirc = Math.min(step.saldoFin, nextStep ? nextStep.amort : 0);
+                sLP = Math.max(0, step.saldoFin - pCirc);
+            }
+
+            consolidado[y - 1].disposiciones += step.disp;
+            consolidado[y - 1].amortizaciones += step.amort;
+            consolidado[y - 1].intereses += interes;
+            consolidado[y - 1].saldoFinalCP += sCP;
+            consolidado[y - 1].porcionCircLP += pCirc;
+            consolidado[y - 1].saldoFinalLP += sLP;
+            consolidado[y - 1].saldoFinalTotal += step.saldoFin;
+
+            filas.push({
+                anio: ESTADO.anioBase + y,
+                saldoIni: step.saldoIni,
+                disposicion: step.disp,
+                amortizacion: step.amort,
+                interes,
+                saldoFin: step.saldoFin
+            });
+        }
+
+        return { credito: cr, filas };
+    });
+
+    return { consolidado, detallePorCredito };
+}
+
+function ejecutarModeloFinanciero() {
+    const b = ESTADO.capturaBase;
+    const deuda = calcularCalendarioCreditos(ESTADO.numAnios);
+
+    // Año 0 (Base)
+    const vTot0 = b.ventasNacionales + b.ventasExportacion;
+    const propNac = vTot0 > 0 ? (b.ventasNacionales / vTot0) : 1;
+    const uBruta0 = vTot0 - b.costoVentas;
+    const uafir0 = uBruta0 - b.gtosOp - b.depreciacion - b.amortizacion;
+    const uafirda0 = uafir0 + b.depreciacion + b.amortizacion;
+    const cif0 = b.gastosFin - b.productosFin;
+    const uai0 = uafir0 - cif0 - b.otrosGastos;
+    const utNeta0 = uai0 - b.impuestos;
+
+    const totActCirc0 = b.caja + b.invTemp + b.clientes + b.inventarios + b.otrosActCirc;
+    const totActNoCirc0 = b.ppe + b.otrosActNoCirc;
+    const totActivo0 = totActCirc0 + totActNoCirc0;
+
+    const totPasCP0 = b.deudaCP + b.porcCircLP + b.proveedores + b.otrosPasCP;
+    const totPasLP0 = b.deudaLP + b.otrosPasLP;
+    const totPasivo0 = totPasCP0 + totPasLP0;
+    const totCapital0 = b.capSocial + b.utilRet + utNeta0;
+    const totPasCap0 = totPasivo0 + totCapital0;
+    const deudaTotal0 = b.deudaCP + b.porcCircLP + b.deudaLP;
+    const deudaNeta0 = deudaTotal0 - b.caja;
+
+    const anio0 = {
+        anio: ESTADO.anioBase,
+        esBase: true,
+        er: {
+            ventasNac: b.ventasNacionales,
+            ventasExp: b.ventasExportacion,
+            ventasTot: vTot0,
+            crecVentasPct: null,
+            costoVentas: b.costoVentas,
+            utilidadBruta: uBruta0,
+            gtosOp: b.gtosOp,
+            depreciacion: b.depreciacion,
+            amortizacion: b.amortizacion,
+            uafir: uafir0,
+            uafirda: uafirda0,
+            gastosFin: b.gastosFin,
+            productosFin: b.productosFin,
+            cif: cif0,
+            otrosGastos: b.otrosGastos,
+            uai: uai0,
+            impuestos: b.impuestos,
+            utilidadNeta: utNeta0
+        },
+        flujo: {
+            utilidadNeta: utNeta0,
+            deprAmort: b.depreciacion + b.amortizacion,
+            cambioClientes: 0,
+            cambioInventarios: 0,
+            cambioProveedores: 0,
+            cambioOtrosOp: 0,
+            feo: 0,
+            capex: 0,
+            flujoLibre: 0,
+            disposiciones: 0,
+            amortizaciones: 0,
+            dividendos: 0,
+            aportacionCapital: 0,
+            fef: 0,
+            flujoNeto: 0,
+            cajaInicial: b.caja,
+            cajaFinal: b.caja
+        },
+        bg: {
+            caja: b.caja,
+            invTemp: b.invTemp,
+            clientes: b.clientes,
+            inventarios: b.inventarios,
+            otrosActCirc: b.otrosActCirc,
+            totActCirc: totActCirc0,
+            ppe: b.ppe,
+            otrosActNoCirc: b.otrosActNoCirc,
+            totActNoCirc: totActNoCirc0,
+            totActivo: totActivo0,
+            deudaCP: b.deudaCP,
+            porcCircLP: b.porcCircLP,
+            proveedores: b.proveedores,
+            otrosPasCP: b.otrosPasCP,
+            totPasCP: totPasCP0,
+            deudaLP: b.deudaLP,
+            otrosPasLP: b.otrosPasLP,
+            totPasLP: totPasLP0,
+            totPasivo: totPasivo0,
+            capSocial: b.capSocial,
+            utilRet: b.utilRet,
+            utilEjercicio: utNeta0,
+            totCapital: totCapital0,
+            totPasCap: totPasCap0,
+            diferencia: totActivo0 - totPasCap0
+        },
+        razones: calcularRazones(vTot0, uBruta0, uafir0, uafirda0, utNeta0, b.costoVentas, b.gastosFin, 0, b.impuestos, 0, totActCirc0, totPasCP0, b.inventarios, b.clientes, b.proveedores, totPasivo0, totCapital0, deudaTotal0, deudaNeta0)
+    };
+
+    const columnas = [anio0];
+    let prev = anio0;
+
+    // Años Proyectados 1..N
+    for (let i = 0; i < ESTADO.numAnios; i++) {
+        const p = ESTADO.parametros[i];
+        const d = deuda.consolidado[i];
+
+        // 1. Estado de Resultados
+        const ventasTot = prev.er.ventasTot * (1 + (p.crecVentas / 100));
+        const ventasNac = ventasTot * propNac;
+        const ventasExp = ventasTot - ventasNac;
+        const costoVentas = ventasTot * (p.costoVentasPct / 100);
+        const utilidadBruta = ventasTot - costoVentas;
+        const gtosOp = ventasTot * (p.gtosOpPct / 100);
+
+        const capex = ventasTot * (p.capexPct / 100);
+        const depreciacion = Math.max(0, (prev.bg.ppe + capex * 0.5) * (p.deprPpePct / 100));
+        const amortizacion = Math.min(prev.bg.otrosActNoCirc, b.amortizacion || 0);
+
+        const uafir = utilidadBruta - gtosOp - depreciacion - amortizacion;
+        const uafirda = uafir + depreciacion + amortizacion;
+
+        const gastosFin = d.intereses;
+        const productosFin = prev.bg.caja > 0 ? prev.bg.caja * (p.tasaInversionCaja / 100) : 0;
+        const cif = gastosFin - productosFin;
+        const otrosGastos = 0;
+        const uai = uafir - cif - otrosGastos;
+        const impuestos = uai > 0 ? uai * (p.tasaImpuestos / 100) : 0;
+        const utilidadNeta = uai - impuestos;
+
+        // 2. Capital de Trabajo y Activos No Circulantes
+        const clientes = (ventasTot * p.diasClientes) / 360;
+        const inventarios = (costoVentas * p.diasInventarios) / 360;
+        const proveedores = (costoVentas * p.diasProveedores) / 360;
+        const invTemp = prev.bg.invTemp;
+        const otrosActCirc = prev.bg.otrosActCirc;
+        const otrosPasCP = prev.bg.otrosPasCP;
+        const otrosPasLP = prev.bg.otrosPasLP;
+
+        const ppe = prev.bg.ppe + capex - depreciacion;
+        const otrosActNoCirc = prev.bg.otrosActNoCirc - amortizacion;
+
+        // 3. Deuda (consistente con Año Base para garantizar Diff = 0.00)
+        const deudaTotalPrev = prev.bg.deudaCP + prev.bg.porcCircLP + prev.bg.deudaLP;
+        const deudaTotal = Math.max(0, deudaTotalPrev + d.disposiciones - d.amortizaciones);
+        // Distribución CP / Porción Circulante / LP proporcional al calendario de créditos
+        let deudaCP = d.saldoFinalCP;
+        let porcCircLP = d.porcionCircLP;
+        let deudaLP = d.saldoFinalLP;
+        const sumaCal = deudaCP + porcCircLP + deudaLP;
+        const deltaConcil = deudaTotal - sumaCal;
+        if (Math.abs(deltaConcil) > 0.01) {
+            // Si el Cuadro de Pasivos difería del AFE base, mantiene el remanente en LP sin romper el cuadre contable
+            deudaLP = Math.max(0, deudaLP + deltaConcil);
+            if (deudaLP === 0 && deltaConcil < 0) {
+                deudaCP = Math.max(0, deudaCP + deltaConcil);
+            }
+        }
+        const cambioDeudaReal = (deudaCP + porcCircLP + deudaLP) - deudaTotalPrev;
+
+        // 4. Capital Contable
+        const dividendos = prev.er.utilidadNeta > 0 ? prev.er.utilidadNeta * (p.dividendosPct / 100) : 0;
+        const aportacionCapital = Math.max(0, parseNum(p.aportacionCapital));
+        const capSocial = prev.bg.capSocial + aportacionCapital;
+        const utilRet = prev.bg.utilRet + prev.bg.utilEjercicio - dividendos;
+        const utilEjercicio = utilidadNeta;
+        const totCapital = capSocial + utilRet + utilEjercicio;
+
+        // 5. Flujo de Efectivo Indirecto
+        const cambioClientes = -(clientes - prev.bg.clientes);
+        const cambioInventarios = -(inventarios - prev.bg.inventarios);
+        const cambioProveedores = (proveedores - prev.bg.proveedores);
+        const cambioOtrosOp = -(otrosActCirc - prev.bg.otrosActCirc) - (invTemp - prev.bg.invTemp) + (otrosPasCP - prev.bg.otrosPasCP) + (otrosPasLP - prev.bg.otrosPasLP);
+
+        const feo = utilidadNeta + depreciacion + amortizacion + cambioClientes + cambioInventarios + cambioProveedores + cambioOtrosOp;
+        const flujoLibre = feo - capex;
+        const fef = cambioDeudaReal - dividendos + aportacionCapital;
+        const flujoNeto = flujoLibre + fef;
+        const cajaInicial = prev.bg.caja;
+        const cajaFinal = cajaInicial + flujoNeto;
+
+        // 6. Balance General
+        const totActCirc = cajaFinal + invTemp + clientes + inventarios + otrosActCirc;
+        const totActNoCirc = ppe + otrosActNoCirc;
+        const totActivo = totActCirc + totActNoCirc;
+
+        const totPasCP = deudaCP + porcCircLP + proveedores + otrosPasCP;
+        const totPasLP = deudaLP + otrosPasLP;
+        const totPasivo = totPasCP + totPasLP;
+        const totPasCap = totPasivo + totCapital;
+        const deudaFinTotal = deudaCP + porcCircLP + deudaLP;
+        const deudaFinNeta = deudaFinTotal - cajaFinal;
+
+        const colAnio = {
+            anio: p.anio,
+            esBase: false,
+            er: {
+                ventasNac, ventasExp, ventasTot,
+                crecVentasPct: p.crecVentas,
+                costoVentas, utilidadBruta, gtosOp, depreciacion, amortizacion,
+                uafir, uafirda, gastosFin, productosFin, cif, otrosGastos, uai, impuestos, utilidadNeta
+            },
+            flujo: {
+                utilidadNeta,
+                deprAmort: depreciacion + amortizacion,
+                cambioClientes, cambioInventarios, cambioProveedores, cambioOtrosOp,
+                feo, capex: -capex, flujoLibre,
+                disposiciones: d.disposiciones,
+                amortizaciones: -d.amortizaciones,
+                dividendos: -dividendos,
+                aportacionCapital,
+                fef, flujoNeto, cajaInicial, cajaFinal
+            },
+            bg: {
+                caja: cajaFinal, invTemp, clientes, inventarios, otrosActCirc, totActCirc,
+                ppe, otrosActNoCirc, totActNoCirc, totActivo,
+                deudaCP, porcCircLP, proveedores, otrosPasCP, totPasCP,
+                deudaLP, otrosPasLP, totPasLP, totPasivo,
+                capSocial, utilRet, utilEjercicio, totCapital, totPasCap,
+                diferencia: totActivo - totPasCap
+            },
+            razones: calcularRazones(ventasTot, utilidadBruta, uafir, uafirda, utilidadNeta, costoVentas, gastosFin, d.amortizaciones, impuestos, capex, totActCirc, totPasCP, inventarios, clientes, proveedores, totPasivo, totCapital, deudaFinTotal, deudaFinNeta)
+        };
+
+        columnas.push(colAnio);
+        prev = colAnio;
+    }
+
+    // Diagnóstico de Cajas Negativas y Cuentas Negativas
+    const aniosCajaNeg = columnas.filter(c => !c.esBase && c.bg.caja < -0.01).map(c => ({ anio: c.anio, caja: c.bg.caja }));
+    const minCaja = Math.min(...columnas.filter(c => !c.esBase).map(c => c.bg.caja));
+
+    ESTADO.proyeccion = { columnas, deuda, aniosCajaNeg, minCaja };
+    return ESTADO.proyeccion;
+}
+
+function calcularRazones(vtas, uBruta, uafir, ebitda, uNeta, cVtas, gFin, amort, imp, capex, actCirc, pasCP, inv, cli, prov, totPas, totCap, deudaTot, deudaNeta) {
+    const servDeuda = gFin + amort;
+    const cfads = ebitda - imp - capex;
+    return {
+        margenBruto: vtas > 0 ? (uBruta / vtas) * 100 : 0,
+        margenOp: vtas > 0 ? (uafir / vtas) * 100 : 0,
+        margenEbitda: vtas > 0 ? (ebitda / vtas) * 100 : 0,
+        margenNeto: vtas > 0 ? (uNeta / vtas) * 100 : 0,
+        liquidez: pasCP > 0 ? (actCirc / pasCP) : 0,
+        pruebaAcida: pasCP > 0 ? ((actCirc - inv) / pasCP) : 0,
+        apalancamiento: totCap > 0 ? (totPas / totCap) : 0,
+        deudaTotEbitda: ebitda > 0 ? (deudaTot / ebitda) : 0,
+        deudaNetaEbitda: ebitda > 0 ? (deudaNeta / ebitda) : 0,
+        coberturaInt: gFin > 0 ? (ebitda / gFin) : 0,
+        dscr: servDeuda > 0 ? (cfads / servDeuda) : 0,
+        diasClientes: vtas > 0 ? (cli / vtas) * 360 : 0,
+        diasInv: cVtas > 0 ? (inv / cVtas) * 360 : 0,
+        diasProv: cVtas > 0 ? (prov / cVtas) * 360 : 0,
+        capitalTrabajoNeto: actCirc - pasCP
+    };
+}
+
+// ============================================================================
+// 6. RENDERIZADO DE TODA LA INTERFAZ (EDO. FINANC., PARÁMETROS, CRÉDITO, CAPTURA)
+// ============================================================================
+function recalcularYRenderizarTodo() {
+    if (!ESTADO.capturaBase) return;
+    ejecutarModeloFinanciero();
+    renderAlertaCajaYKPIs();
+    sincronizarPanelRapido();
+    renderEdoFinanc();
+    renderTablaParametros();
+    renderAnalisisHistorico();
+    renderModuloCredito();
+    renderCapturaBase();
+}
+
+function renderAlertaCajaYKPIs() {
+    const pr = ESTADO.proyeccion;
+    const panel = document.getElementById('panel-alerta-caja');
+    const icon = document.getElementById('icono-alerta-caja');
+    const titulo = document.getElementById('titulo-alerta-caja');
+    const desc = document.getElementById('desc-alerta-caja');
+    const btnAuto = document.getElementById('btn-auto-cuadrar');
+
+    document.getElementById('badge-horizonte-activo').innerText = `HORIZONTE: ${ESTADO.numAnios} AÑO(S) (${ESTADO.anioBase + 1} - ${ESTADO.anioBase + ESTADO.numAnios})`;
+
+    if (pr.aniosCajaNeg.length > 0) {
+        panel.className = 'rounded-2xl p-5 border-2 border-red-400 bg-red-50 shadow-sm flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4';
+        icon.className = 'w-12 h-12 rounded-xl bg-red-600 text-white flex items-center justify-center text-xl shrink-0';
+        icon.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+        titulo.style.color = '#991B1B';
+        titulo.innerText = `¡Alerta! Caja Final Negativa detectada en ${pr.aniosCajaNeg.length} año(s)`;
+        const detalle = pr.aniosCajaNeg.map(x => `<strong>${x.anio} ($${fmtNum(x.caja)})</strong>`).join(', ');
+        desc.className = 'text-xs md:text-sm mt-1 m-0 text-red-900';
+        desc.innerHTML = `Cuentas de caja en déficit: ${detalle}. Ajusta los <strong>Parámetros</strong> o el <strong>Crédito</strong> abajo (o usa el botón de auto-ajuste) para cuadrar la caja a positivo.`;
+        btnAuto.classList.remove('hidden');
+    } else {
+        panel.className = 'rounded-2xl p-5 border-2 border-emerald-400 bg-emerald-50 shadow-sm flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4';
+        icon.className = 'w-12 h-12 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-xl shrink-0';
+        icon.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+        titulo.style.color = '#065F46';
+        titulo.innerText = 'Proyección con Caja Positiva en todo el horizonte';
+        desc.className = 'text-xs md:text-sm mt-1 m-0 text-emerald-900';
+        desc.innerHTML = `Caja mínima proyectada: <strong>$${fmtNum(pr.minCaja)}</strong>. Balance General cuadrado a <strong>$0.00</strong> en todos los años.`;
+        btnAuto.classList.add('hidden');
+    }
+
+    // KPIs Resumen
+    const ult = pr.columnas[pr.columnas.length - 1];
+    const base = pr.columnas[0];
+    const promDscr = pr.columnas.slice(1).reduce((s, c) => s + c.razones.dscr, 0) / Math.max(1, ESTADO.numAnios);
+
+    const kpis = [
+        {
+            label: `Ventas Proyectadas (${ult.anio})`,
+            val: `$${fmtNum(ult.er.ventasTot)}`,
+            sub: `vs Base $${fmtNum(base.er.ventasTot)}`,
+            neg: ult.er.ventasTot < 0,
+            icon: 'fa-arrow-trend-up'
+        },
+        {
+            label: `EBITDA Proyectado (${ult.anio})`,
+            val: `$${fmtNum(ult.er.uafirda)}`,
+            sub: `Margen EBITDA: ${fmtPct(ult.razones.margenEbitda)}`,
+            neg: ult.er.uafirda < 0,
+            icon: 'fa-chart-column'
+        },
+        {
+            label: 'Caja Mínima del Horizonte',
+            val: `$${fmtNum(pr.minCaja)}`,
+            sub: pr.minCaja < 0 ? 'Requiere ajuste de Crédito/Parámetros' : `Caja Final ${ult.anio}: $${fmtNum(ult.bg.caja)}`,
+            neg: pr.minCaja < 0,
+            icon: 'fa-wallet'
+        },
+        {
+            label: `Deuda Neta / EBITDA (${ult.anio})`,
+            val: fmtX(ult.razones.deudaNetaEbitda),
+            sub: `DSCR Promedio: ${fmtX(promDscr)}`,
+            neg: ult.razones.deudaNetaEbitda > 4.5 || promDscr < 1.1,
+            icon: 'fa-scale-balanced'
+        }
+    ];
+
+    document.getElementById('kpi-resumen-grid').innerHTML = kpis.map(k => `
+        <div class="bg-white rounded-2xl p-4 border ${k.neg ? 'border-red-300 bg-red-50/40' : 'border-slate-200'} shadow-sm" style="border-left: 4px solid ${k.neg ? '#DC2626' : '#001391'};">
+            <div class="flex items-center justify-between mb-1">
+                <span class="text-[11px] font-bold uppercase tracking-wider ${k.neg ? 'text-red-700' : 'text-slate-500'}">${k.label}</span>
+                <span class="w-7 h-7 rounded-lg ${k.neg ? 'bg-red-100 text-red-700' : 'bg-blue-50 text-bbva-blue'} flex items-center justify-center text-xs">
+                    <i class="fa-solid ${k.icon}"></i>
+                </span>
+            </div>
+            <div class="text-xl font-extrabold ${k.neg ? 'text-red-700' : 'text-bbva-navy'}">${k.val}</div>
+            <div class="text-[11px] font-semibold mt-1 ${k.neg ? 'text-red-600' : 'text-slate-500'}">${k.sub}</div>
+        </div>
+    `).join('');
+}
+
+function renderEdoFinanc() {
+    const cols = ESTADO.proyeccion.columnas;
+
+    const buildHeader = (tituloCol, bgHex) => {
+        let h = `<thead><tr style="background:${bgHex}; color:#fff;">
+            <th class="p-2.5 border border-white/15 text-left ct-sticky-col" style="background:${bgHex};">${tituloCol}</th>`;
+        cols.forEach(c => {
+            h += `<th class="p-2.5 border border-white/15 text-right min-w-[115px]">
+                ${c.esBase ? `BASE ${c.anio}` : `PROY ${c.anio}`}
+            </th>`;
+        });
+        h += '</tr></thead>';
+        return h;
+    };
+
+    const buildRows = (filasDef) => {
+        let html = '<tbody>';
+        filasDef.forEach(f => {
+            const trCls = f.dark ? 'ct-row-total-dark' : (f.sub ? 'ct-row-subtotal' : 'ct-row-regular');
+            const tdLblCls = f.dark ? 'ct-sticky-total-dark' : (f.sub ? 'ct-sticky-subtotal' : 'bg-white text-slate-700');
+            html += `<tr class="${trCls}">
+                <td class="p-2 border border-slate-200 ct-sticky-col ${tdLblCls} ${f.sub || f.dark ? 'font-bold' : 'font-medium'}">${f.label}</td>`;
+
+            cols.forEach(c => {
+                const v = f.get(c);
+                let txt = '-';
+                if (v !== null && v !== undefined) {
+                    if (f.fmt === 'pct') txt = fmtPct(v);
+                    else if (f.fmt === 'x') txt = fmtX(v);
+                    else if (f.fmt === 'dias') txt = fmtNum(v, 0) + ' d';
+                    else txt = fmtNum(v, f.dec || 0);
+                }
+
+                let cellCls = 'p-2 border border-slate-200 text-right';
+                const esNeg = (v !== null && v !== undefined && v < -0.01);
+                if (f.marcarCaja && !c.esBase) {
+                    cellCls += esNeg ? ' cell-negativo' : ' cell-positivo-caja';
+                } else if (f.alertaNeg && esNeg) {
+                    cellCls += f.dark ? ' cell-negativo' : ' cell-negativo-suave';
+                } else if (f.checkCuadre) {
+                    cellCls += Math.abs(v) < 1 ? ' text-emerald-700 font-bold bg-emerald-50' : ' cell-negativo';
+                }
+
+                html += `<td class="${cellCls}">${esNeg && f.marcarCaja ? '<i class="fa-solid fa-triangle-exclamation mr-1"></i>' : ''}${txt}</td>`;
+            });
+            html += '</tr>';
+        });
+        html += '</tbody>';
+        return html;
+    };
+
+    // I. Estado de Resultados
+    document.getElementById('tbl-edo-er').innerHTML = buildHeader('CONCEPTO ESTADO DE RESULTADOS', '#070E46') + buildRows([
+        { label: 'Ventas Netas Nacionales', get: c => c.er.ventasNac },
+        { label: 'Ventas Netas Exportación', get: c => c.er.ventasExp },
+        { label: 'VENTAS NETAS TOTALES', sub: true, alertaNeg: true, get: c => c.er.ventasTot },
+        { label: 'Crecimiento Anual de Ventas (%)', fmt: 'pct', alertaNeg: true, get: c => c.er.crecVentasPct },
+        { label: 'Costo de Ventas', get: c => c.er.costoVentas },
+        { label: 'UTILIDAD BRUTA', sub: true, alertaNeg: true, get: c => c.er.utilidadBruta },
+        { label: 'Gastos de Venta y Administración', get: c => c.er.gtosOp },
+        { label: 'Depreciación', get: c => c.er.depreciacion },
+        { label: 'Amortización', get: c => c.er.amortizacion },
+        { label: 'UAFIR (Utilidad Operativa / EBIT)', sub: true, alertaNeg: true, get: c => c.er.uafir },
+        { label: 'UAFIRDA (EBITDA)', sub: true, alertaNeg: true, get: c => c.er.uafirda },
+        { label: 'Gastos Financieros (Intereses Deuda)', get: c => c.er.gastosFin },
+        { label: 'Productos Financieros', get: c => c.er.productosFin },
+        { label: 'Costo Integral de Financiamiento (CIF)', sub: true, get: c => c.er.cif },
+        { label: 'Otros Gastos (Ingresos)', get: c => c.er.otrosGastos },
+        { label: 'UTILIDAD ANTES DE IMPUESTOS (UAI)', sub: true, alertaNeg: true, get: c => c.er.uai },
+        { label: 'ISR y PTU Causado / Estimado', get: c => c.er.impuestos },
+        { label: 'UTILIDAD NETA', dark: true, alertaNeg: true, get: c => c.er.utilidadNeta }
+    ]);
+
+    // II. Flujo de Efectivo y Caja
+    document.getElementById('tbl-edo-flujo').innerHTML = buildHeader('FLUJO DE EFECTIVO Y POSICIÓN DE CAJA', '#0F5C6E') + buildRows([
+        { label: 'Utilidad Neta', alertaNeg: true, get: c => c.esBase ? null : c.flujo.utilidadNeta },
+        { label: '(+) Depreciación y Amortización', get: c => c.esBase ? null : c.flujo.deprAmort },
+        { label: 'Variación en Clientes (CxC)', get: c => c.esBase ? null : c.flujo.cambioClientes },
+        { label: 'Variación en Inventarios', get: c => c.esBase ? null : c.flujo.cambioInventarios },
+        { label: 'Variación en Proveedores (CxP)', get: c => c.esBase ? null : c.flujo.cambioProveedores },
+        { label: 'FLUJO DE EFECTIVO DE OPERACIÓN (FEO)', sub: true, alertaNeg: true, get: c => c.esBase ? null : c.flujo.feo },
+        { label: '(-) Inversión en Activos Fijos (CAPEX)', get: c => c.esBase ? null : c.flujo.capex },
+        { label: 'FLUJO LIBRE ANTES DE DEUDA (CFADS)', sub: true, alertaNeg: true, get: c => c.esBase ? null : c.flujo.flujoLibre },
+        { label: '(+) Disposición de Nuevo Crédito', get: c => c.esBase ? null : c.flujo.disposiciones },
+        { label: '(-) Amortización de Deuda (Capital)', get: c => c.esBase ? null : c.flujo.amortizaciones },
+        { label: '(-) Pago de Dividendos', get: c => c.esBase ? null : c.flujo.dividendos },
+        { label: '(+) Aportación de Capital Social', get: c => c.esBase ? null : c.flujo.aportacionCapital },
+        { label: 'FLUJO DE FINANCIAMIENTO (FEF)', sub: true, get: c => c.esBase ? null : c.flujo.fef },
+        { label: 'FLUJO NETO DE EFECTIVO DEL PERIODO', sub: true, alertaNeg: true, get: c => c.esBase ? null : c.flujo.flujoNeto },
+        { label: 'Caja Inicial', alertaNeg: true, get: c => c.esBase ? null : c.flujo.cajaInicial },
+        { label: 'CAJA FINAL PROYECTADA', dark: true, marcarCaja: true, alertaNeg: true, get: c => c.flujo.cajaFinal }
+    ]);
+
+    // III. Balance General
+    document.getElementById('tbl-edo-bg').innerHTML = buildHeader('CONCEPTO BALANCE GENERAL', '#1B365D') + buildRows([
+        { label: 'Caja y Bancos', sub: true, marcarCaja: true, alertaNeg: true, get: c => c.bg.caja },
+        { label: 'Inversiones Temporales', get: c => c.bg.invTemp },
+        { label: 'Clientes y Documentos por Cobrar', get: c => c.bg.clientes },
+        { label: 'Inventarios', get: c => c.bg.inventarios },
+        { label: 'Otros Activos Circulantes', get: c => c.bg.otrosActCirc },
+        { label: 'TOTAL ACTIVO CIRCULANTE', sub: true, alertaNeg: true, get: c => c.bg.totActCirc },
+        { label: 'Propiedad, Planta y Equipo Neto', get: c => c.bg.ppe },
+        { label: 'Otros Activos No Circulantes / Diferidos', get: c => c.bg.otrosActNoCirc },
+        { label: 'TOTAL ACTIVO NO CIRCULANTE', sub: true, get: c => c.bg.totActNoCirc },
+        { label: 'TOTAL ACTIVO', dark: true, get: c => c.bg.totActivo },
+        { label: 'Deuda Financiera Corto Plazo / Revolvente', get: c => c.bg.deudaCP },
+        { label: 'Porción Circulante Deuda Largo Plazo', get: c => c.bg.porcCircLP },
+        { label: 'Proveedores', get: c => c.bg.proveedores },
+        { label: 'Otros Pasivos Corto Plazo', get: c => c.bg.otrosPasCP },
+        { label: 'TOTAL PASIVO CORTO PLAZO', sub: true, get: c => c.bg.totPasCP },
+        { label: 'Deuda Financiera Largo Plazo', get: c => c.bg.deudaLP },
+        { label: 'Otros Pasivos Largo Plazo', get: c => c.bg.otrosPasLP },
+        { label: 'TOTAL PASIVO LARGO PLAZO', sub: true, get: c => c.bg.totPasLP },
+        { label: 'TOTAL PASIVO', sub: true, get: c => c.bg.totPasivo },
+        { label: 'Capital Social y Reservas', get: c => c.bg.capSocial },
+        { label: 'Utilidades Retenidas', alertaNeg: true, get: c => c.bg.utilRet },
+        { label: 'Utilidad del Ejercicio', alertaNeg: true, get: c => c.bg.utilEjercicio },
+        { label: 'TOTAL CAPITAL CONTABLE', sub: true, alertaNeg: true, get: c => c.bg.totCapital },
+        { label: 'TOTAL PASIVO + CAPITAL CONTABLE', dark: true, get: c => c.bg.totPasCap },
+        { label: 'Verificación de Cuadre (Activo - Pasivo+Cap)', checkCuadre: true, dec: 2, get: c => c.bg.diferencia }
+    ]);
+
+    // IV. Razones Financieras
+    document.getElementById('tbl-edo-razones').innerHTML = buildHeader('RAZONES FINANCIERAS E INDICADORES DE CRÉDITO', '#001391') + buildRows([
+        { label: 'Margen Bruto (%)', fmt: 'pct', alertaNeg: true, get: c => c.razones.margenBruto },
+        { label: 'Margen Operativo / UAFIR (%)', fmt: 'pct', alertaNeg: true, get: c => c.razones.margenOp },
+        { label: 'Margen EBITDA / UAFIRDA (%)', fmt: 'pct', alertaNeg: true, get: c => c.razones.margenEbitda },
+        { label: 'Margen Neto (%)', fmt: 'pct', alertaNeg: true, get: c => c.razones.margenNeto },
+        { label: 'Razón de Liquidez (Act. Circ. / Pas. CP)', fmt: 'x', get: c => c.razones.liquidez },
+        { label: 'Prueba Ácida', fmt: 'x', get: c => c.razones.pruebaAcida },
+        { label: 'Capital de Trabajo Neto (Fondo de Maniobra)', sub: true, alertaNeg: true, get: c => c.razones.capitalTrabajoNeto },
+        { label: 'Apalancamiento (Pasivo Total / Capital)', fmt: 'x', get: c => c.razones.apalancamiento },
+        { label: 'Deuda Financiera Total / EBITDA', sub: true, fmt: 'x', get: c => c.razones.deudaTotEbitda },
+        { label: 'Deuda Financiera Neta / EBITDA', sub: true, fmt: 'x', get: c => c.razones.deudaNetaEbitda },
+        { label: 'Cobertura de Intereses (EBITDA / Gtos. Fin.)', fmt: 'x', get: c => c.razones.coberturaInt },
+        { label: 'Cobertura Servicio de Deuda (DSCR)', sub: true, fmt: 'x', alertaNeg: true, get: c => c.esBase ? null : c.razones.dscr },
+        { label: 'Días de Clientes', fmt: 'dias', get: c => c.razones.diasClientes },
+        { label: 'Días de Inventarios', fmt: 'dias', get: c => c.razones.diasInv },
+        { label: 'Días de Proveedores', fmt: 'dias', get: c => c.razones.diasProv }
+    ]);
+}
+
+// ============================================================================
+// 7. RENDERIZADO DE PARÁMETROS EDITABLES Y ANÁLISIS HISTÓRICO DEL AFE
+// ============================================================================
+const FILAS_PARAMETROS = [
+    { key: 'crecVentas', label: 'Crecimiento Anual de Ventas (%)', step: '0.1' },
+    { key: 'costoVentasPct', label: 'Costo de Ventas (% s/ Ventas)', step: '0.1' },
+    { key: 'gtosOpPct', label: 'Gastos de Venta y Admón. (% s/ Ventas)', step: '0.1' },
+    { key: 'deprPpePct', label: 'Tasa de Depreciación (% s/ PPE)', step: '0.1' },
+    { key: 'diasClientes', label: 'Días de Clientes (CxC - Base 360)', step: '1' },
+    { key: 'diasInventarios', label: 'Días de Inventarios (Base 360)', step: '1' },
+    { key: 'diasProveedores', label: 'Días de Proveedores (CxP - Base 360)', step: '1' },
+    { key: 'capexPct', label: 'Inversión en Activos Fijos / CAPEX (% s/ Ventas)', step: '0.1' },
+    { key: 'tasaImpuestos', label: 'Tasa Efectiva de Impuestos ISR + PTU (%)', step: '0.5' },
+    { key: 'tasaInversionCaja', label: 'Rendimiento sobre Caja Positiva (%)', step: '0.25' },
+    { key: 'dividendosPct', label: 'Política de Dividendos (% s/ Utilidad Neta previa)', step: '1' },
+    { key: 'aportacionCapital', label: 'Aportación de Capital de Accionistas ($)', step: '100' }
+];
+
+function renderTablaParametros() {
+    let html = `<thead><tr class="bg-[#070E46] text-white">
+        <th class="p-2.5 border border-slate-700 text-left ct-sticky-col bg-[#070E46]">PARÁMETRO DE PROYECCIÓN</th>
+        <th class="p-2.5 border border-slate-700 text-center min-w-[115px] bg-[#0F5C6E]">PROM. AFE</th>`;
+    ESTADO.parametros.forEach(p => {
+        html += `<th class="p-2.5 border border-slate-700 text-center min-w-[105px]">PROY ${p.anio}</th>`;
+    });
+    html += `<th class="p-2.5 border border-slate-700 text-center min-w-[95px]">ACCIÓN</th></tr></thead><tbody>`;
+
+    FILAS_PARAMETROS.forEach(f => {
+        const promVal = ESTADO.promediosAFE ? ESTADO.promediosAFE[f.key] : 0;
+        html += `<tr class="ct-row-regular">
+            <td class="p-2 border border-slate-200 ct-sticky-col bg-white font-semibold text-slate-700">${f.label}</td>
+            <td class="p-2 border border-slate-200 text-center font-bold text-[#0F5C6E] bg-teal-50/50">${fmtNum(promVal, f.step === '1' ? 0 : 2)}</td>`;
+        ESTADO.parametros.forEach((p, idx) => {
+            html += `<td class="p-1.5 border border-slate-200">
+                <input type="number" step="${f.step}" value="${p[f.key]}"
+                    oninput="onEditarParametro(${idx}, '${f.key}', this.value)"
+                    class="input-param text-xs">
+            </td>`;
+        });
+        html += `<td class="p-1.5 border border-slate-200 text-center">
+            <button type="button" onclick="copiarAnio1ATodos('${f.key}')" class="text-[11px] font-bold text-bbva-blue hover:underline" title="Copiar valor del Año 1 a todos los años">
+                Igualar años
+            </button>
+        </td></tr>`;
+    });
+
+    html += '</tbody>';
+    document.getElementById('tbl-parametros-edit').innerHTML = html;
+}
+
+function onEditarParametro(idxAnio, key, valStr) {
+    const v = parseFloat(valStr);
+    ESTADO.parametros[idxAnio][key] = isNaN(v) ? 0 : v;
+    ejecutarModeloFinanciero();
+    renderAlertaCajaYKPIs();
+    sincronizarPanelRapido();
+    renderEdoFinanc();
+}
+
+function copiarAnio1ATodos(key) {
+    if (!ESTADO.parametros.length) return;
+    const v0 = ESTADO.parametros[0][key];
+    ESTADO.parametros.forEach(p => { p[key] = v0; });
+    recalcularYRenderizarTodo();
+}
+
+function renderAnalisisHistorico() {
+    const hist = ESTADO.analisisHistorico;
+    const prom = ESTADO.promediosAFE;
+    if (!hist.length) return;
+
+    let html = `<thead><tr class="bg-[#1B365D] text-white">
+        <th class="p-2.5 border border-slate-700 text-left ct-sticky-col bg-[#1B365D]">INDICADOR HISTÓRICO (AFE)</th>`;
+    hist.forEach(h => {
+        html += `<th class="p-2.5 border border-slate-700 text-right min-w-[105px]">${h.fecha}</th>`;
+    });
+    html += `<th class="p-2.5 border border-slate-700 text-right min-w-[115px] bg-[#0F5C6E]">PROMEDIO YoY</th></tr></thead><tbody>`;
+
+    const rows = [
+        { lbl: 'Ventas Totales ($)', get: h => fmtNum(h.ventas), prom: '-' },
+        { lbl: 'Cambio Anual Ventas YoY (%)', get: h => h.crecVentas === null ? '-' : fmtPct(h.crecVentas), prom: fmtPct(prom.crecVentas) },
+        { lbl: 'Costo de Ventas / Ventas (%)', get: h => fmtPct(h.costoVentasPct), prom: fmtPct(prom.costoVentasPct) },
+        { lbl: 'Gastos de Operación / Ventas (%)', get: h => fmtPct(h.gtosOpPct), prom: fmtPct(prom.gtosOpPct) },
+        { lbl: 'Depreciación / PPE (%)', get: h => fmtPct(h.deprPpePct), prom: fmtPct(prom.deprPpePct) },
+        { lbl: 'Días de Clientes', get: h => fmtNum(h.diasClientes, 0) + ' d', prom: prom.diasClientes + ' d' },
+        { lbl: 'Días de Inventarios', get: h => fmtNum(h.diasInventarios, 0) + ' d', prom: prom.diasInventarios + ' d' },
+        { lbl: 'Días de Proveedores', get: h => fmtNum(h.diasProveedores, 0) + ' d', prom: prom.diasProveedores + ' d' },
+        { lbl: 'CAPEX Estimado / Ventas (%)', get: h => fmtPct(h.capexPct), prom: fmtPct(prom.capexPct) },
+        { lbl: 'Tasa Efectiva Impuestos (%)', get: h => fmtPct(h.tasaImpuestos), prom: fmtPct(prom.tasaImpuestos) }
+    ];
+
+    rows.forEach(r => {
+        html += `<tr class="ct-row-regular">
+            <td class="p-2 border border-slate-200 ct-sticky-col bg-white font-medium text-slate-700">${r.lbl}</td>`;
+        hist.forEach(h => { html += `<td class="p-2 border border-slate-200 text-right">${r.get(h)}</td>`; });
+        html += `<td class="p-2 border border-slate-200 text-right font-extrabold text-[#0F5C6E] bg-teal-50/50">${r.prom}</td></tr>`;
+    });
+    html += '</tbody>';
+    document.getElementById('tbl-analisis-historico-afe').innerHTML = html;
+}
+
+// ============================================================================
+// 8. MÓDULO DE CRÉDITO (PASIVOS EXISTENTES + NUEVO FINANCIAMIENTO)
+// ============================================================================
+function renderModuloCredito() {
+    // Conciliación vs Deuda Base AFE
+    const deudaExistentePasivos = ESTADO.creditos.filter(c => c.origen === 'EXISTENTE').reduce((s, c) => s + parseNum(c.saldoInicial), 0);
+    const deudaBaseAFE = ESTADO.capturaBase.deudaCP + ESTADO.capturaBase.porcCircLP + ESTADO.capturaBase.deudaLP;
+    const aviso = document.getElementById('aviso-conciliacion-deuda');
+
+    if (Math.abs(deudaExistentePasivos - deudaBaseAFE) > 1) {
+        aviso.classList.remove('hidden');
+        document.getElementById('txt-conciliacion-deuda').innerHTML =
+            `<i class="fa-solid fa-scale-unbalanced mr-1"></i> <strong>Diferencia detectada:</strong> El saldo total de Pasivos Existentes (<strong>$${fmtNum(deudaExistentePasivos)}</strong>) difiere de la Deuda Financiera del AFE Base (<strong>$${fmtNum(deudaBaseAFE)}</strong>). El Balance proyectado mantiene su cuadre contable, pero puedes sincronizarlos si lo deseas.`;
+    } else {
+        aviso.classList.add('hidden');
+    }
+
+    // Tabla Editable de Créditos
+    let html = `<thead><tr class="bg-[#0F5C6E] text-white">
+        <th class="p-2.5 border border-cyan-900 text-left">ORIGEN</th>
+        <th class="p-2.5 border border-cyan-900 text-left min-w-[190px]">INSTITUCIÓN / LÍNEA</th>
+        <th class="p-2.5 border border-cyan-900 text-center">TIPO</th>
+        <th class="p-2.5 border border-cyan-900 text-right min-w-[110px]">SALDO / MONTO</th>
+        <th class="p-2.5 border border-cyan-900 text-right min-w-[85px]">TASA (%)</th>
+        <th class="p-2.5 border border-cyan-900 text-right min-w-[85px]">PLAZO (AÑOS)</th>
+        <th class="p-2.5 border border-cyan-900 text-right min-w-[85px]">GRACIA (AÑOS)</th>
+        <th class="p-2.5 border border-cyan-900 text-center min-w-[95px]">AÑO DISP.</th>
+        <th class="p-2.5 border border-cyan-900 text-center">QUITAR</th>
+    </tr></thead><tbody>`;
+
+    if (ESTADO.creditos.length === 0) {
+        html += `<tr><td colspan="9" class="p-4 text-center text-slate-400">Sin líneas de crédito registradas. Agrega una línea arriba.</td></tr>`;
+    } else {
+        ESTADO.creditos.forEach((cr, idx) => {
+            const esNuevo = cr.origen === 'NUEVO';
+            let optsAnio = '';
+            for (let y = 1; y <= ESTADO.numAnios; y++) {
+                optsAnio += `<option value="${y}" ${Number(cr.anioDisposicion) === y ? 'selected' : ''}>Año ${y} (${ESTADO.anioBase + y})</option>`;
+            }
+            html += `<tr class="${esNuevo ? 'bg-blue-50/50' : 'bg-white'}">
+                <td class="p-2 border border-slate-200">
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold ${esNuevo ? 'bg-blue-100 text-bbva-blue' : 'bg-slate-200 text-slate-700'}">
+                        ${esNuevo ? 'NUEVO CRÉDITO' : 'PASIVO ACTUAL'}
+                    </span>
+                </td>
+                <td class="p-1.5 border border-slate-200">
+                    <input type="text" value="${cr.institucion}" onchange="onEditarCredito(${idx}, 'institucion', this.value)" class="input-text-tbl text-xs">
+                </td>
+                <td class="p-1.5 border border-slate-200">
+                    <select onchange="onEditarCredito(${idx}, 'tipo', this.value)" class="input-text-tbl text-xs">
+                        <option value="LP" ${cr.tipo === 'LP' ? 'selected' : ''}>Simple LP</option>
+                        <option value="CP" ${cr.tipo === 'CP' ? 'selected' : ''}>Corto Plazo (CP)</option>
+                        <option value="REVOLVENTE" ${cr.tipo === 'REVOLVENTE' ? 'selected' : ''}>Revolvente</option>
+                    </select>
+                </td>
+                <td class="p-1.5 border border-slate-200">
+                    <input type="number" step="any" value="${cr.saldoInicial}" oninput="onEditarCredito(${idx}, 'saldoInicial', this.value)" class="input-param text-xs">
+                </td>
+                <td class="p-1.5 border border-slate-200">
+                    <input type="number" step="0.25" value="${cr.tasaAnual}" oninput="onEditarCredito(${idx}, 'tasaAnual', this.value)" class="input-param text-xs">
+                </td>
+                <td class="p-1.5 border border-slate-200">
+                    <input type="number" min="1" max="20" step="1" value="${cr.plazoAnios}" oninput="onEditarCredito(${idx}, 'plazoAnios', this.value)" class="input-param text-xs">
+                </td>
+                <td class="p-1.5 border border-slate-200">
+                    <input type="number" min="0" max="5" step="1" value="${cr.aniosGracia}" oninput="onEditarCredito(${idx}, 'aniosGracia', this.value)" class="input-param text-xs">
+                </td>
+                <td class="p-1.5 border border-slate-200 text-center">
+                    ${esNuevo ? `<select onchange="onEditarCredito(${idx}, 'anioDisposicion', this.value)" class="input-text-tbl text-xs">${optsAnio}</select>` : '<span class="text-slate-500 font-bold">Base (Año 0)</span>'}
+                </td>
+                <td class="p-1.5 border border-slate-200 text-center">
+                    <button type="button" onclick="eliminarCredito(${idx})" class="text-red-600 hover:text-red-800 px-2 py-1">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </td>
+            </tr>`;
+        });
+    }
+    html += '</tbody>';
+    document.getElementById('tbl-creditos-edit').innerHTML = html;
+
+    // Tabla Consolidada Servicio de Deuda
+    const cons = ESTADO.proyeccion.deuda.consolidado;
+    let hServ = `<thead><tr class="bg-[#1B365D] text-white">
+        <th class="p-2.5 border border-slate-700 text-left ct-sticky-col bg-[#1B365D]">CONCEPTO SERVICIO DE DEUDA</th>`;
+    cons.forEach(c => { hServ += `<th class="p-2.5 border border-slate-700 text-right min-w-[110px]">PROY ${c.anio}</th>`; });
+    hServ += '</tr></thead><tbody>';
+
+    const filasServ = [
+        { lbl: '(+) Disposiciones de Nuevo Crédito', get: c => c.disposiciones },
+        { lbl: '(-) Amortizaciones de Capital', get: c => c.amortizaciones },
+        { lbl: 'Gastos Financieros / Intereses', sub: true, get: c => c.intereses },
+        { lbl: 'Servicio Total de Deuda (Capital + Intereses)', sub: true, get: c => c.amortizaciones + c.intereses },
+        { lbl: 'Saldo Final Deuda Corto Plazo / Revolvente', get: c => c.saldoFinalCP },
+        { lbl: 'Porción Circulante Deuda Largo Plazo', get: c => c.porcionCircLP },
+        { lbl: 'Saldo Final Deuda Largo Plazo', get: c => c.saldoFinalLP },
+        { lbl: 'SALDO FINAL DEUDA FINANCIERA TOTAL', dark: true, get: c => c.saldoFinalTotal }
+    ];
+
+    filasServ.forEach(f => {
+        const trCls = f.dark ? 'ct-row-total-dark' : (f.sub ? 'ct-row-subtotal' : 'ct-row-regular');
+        const tdCls = f.dark ? 'ct-sticky-total-dark' : (f.sub ? 'ct-sticky-subtotal' : 'bg-white text-slate-700');
+        hServ += `<tr class="${trCls}"><td class="p-2 border border-slate-200 ct-sticky-col ${tdCls}">${f.lbl}</td>`;
+        cons.forEach(c => { hServ += `<td class="p-2 border border-slate-200 text-right">${fmtNum(f.get(c))}</td>`; });
+        hServ += '</tr>';
+    });
+    hServ += '</tbody>';
+    document.getElementById('tbl-servicio-deuda').innerHTML = hServ;
+}
+
+function onEditarCredito(idx, campo, val) {
+    if (campo === 'institucion' || campo === 'tipo') {
+        ESTADO.creditos[idx][campo] = val;
+    } else {
+        ESTADO.creditos[idx][campo] = parseFloat(val) || 0;
+    }
+    ejecutarModeloFinanciero();
+    renderAlertaCajaYKPIs();
+    sincronizarPanelRapido();
+    renderEdoFinanc();
+    // Refrescar tabla servicio de deuda sin destruir foco del input
+    const cons = ESTADO.proyeccion.deuda.consolidado;
+    renderServicioDeudaSolo(cons);
+}
+
+function renderServicioDeudaSolo(cons) {
+    let hServ = `<thead><tr class="bg-[#1B365D] text-white">
+        <th class="p-2.5 border border-slate-700 text-left ct-sticky-col bg-[#1B365D]">CONCEPTO SERVICIO DE DEUDA</th>`;
+    cons.forEach(c => { hServ += `<th class="p-2.5 border border-slate-700 text-right min-w-[110px]">PROY ${c.anio}</th>`; });
+    hServ += '</tr></thead><tbody>';
+    [
+        { lbl: '(+) Disposiciones de Nuevo Crédito', get: c => c.disposiciones },
+        { lbl: '(-) Amortizaciones de Capital', get: c => c.amortizaciones },
+        { lbl: 'Gastos Financieros / Intereses', sub: true, get: c => c.intereses },
+        { lbl: 'Servicio Total de Deuda (Capital + Intereses)', sub: true, get: c => c.amortizaciones + c.intereses },
+        { lbl: 'Saldo Final Deuda Corto Plazo / Revolvente', get: c => c.saldoFinalCP },
+        { lbl: 'Porción Circulante Deuda Largo Plazo', get: c => c.porcionCircLP },
+        { lbl: 'Saldo Final Deuda Largo Plazo', get: c => c.saldoFinalLP },
+        { lbl: 'SALDO FINAL DEUDA FINANCIERA TOTAL', dark: true, get: c => c.saldoFinalTotal }
+    ].forEach(f => {
+        const trCls = f.dark ? 'ct-row-total-dark' : (f.sub ? 'ct-row-subtotal' : 'ct-row-regular');
+        const tdCls = f.dark ? 'ct-sticky-total-dark' : (f.sub ? 'ct-sticky-subtotal' : 'bg-white text-slate-700');
+        hServ += `<tr class="${trCls}"><td class="p-2 border border-slate-200 ct-sticky-col ${tdCls}">${f.lbl}</td>`;
+        cons.forEach(c => { hServ += `<td class="p-2 border border-slate-200 text-right">${fmtNum(f.get(c))}</td>`; });
+        hServ += '</tr>';
+    });
+    document.getElementById('tbl-servicio-deuda').innerHTML = hServ + '</tbody>';
+}
+
+function agregarCreditoManual(origen) {
+    ESTADO.creditos.push({
+        id: 'cr_' + Math.random().toString(36).slice(2, 8),
+        origen,
+        institucion: origen === 'NUEVO' ? 'Nuevo Crédito BBVA / Línea Liquidez' : 'Banco Adicional',
+        tipo: origen === 'NUEVO' ? 'LP' : 'LP',
+        saldoInicial: origen === 'NUEVO' ? 10000 : 5000,
+        tasaAnual: 12.5,
+        plazoAnios: 5,
+        aniosGracia: 0,
+        anioDisposicion: origen === 'NUEVO' ? 1 : 0
+    });
+    recalcularYRenderizarTodo();
+}
+
+function eliminarCredito(idx) {
+    ESTADO.creditos.splice(idx, 1);
+    recalcularYRenderizarTodo();
+}
+
+function sincronizarDeudaBaseConPasivos() {
+    const exist = ESTADO.creditos.filter(c => c.origen === 'EXISTENTE');
+    let cp = 0, pCirc = 0, lp = 0;
+    exist.forEach(c => {
+        const s = Math.max(0, parseNum(c.saldoInicial));
+        if (c.tipo === 'CP' || c.tipo === 'REVOLVENTE') cp += s;
+        else {
+            const pA = Math.max(1, (parseInt(c.plazoAnios, 10) || 1) - (parseInt(c.aniosGracia, 10) || 0));
+            const am1 = (parseInt(c.aniosGracia, 10) || 0) > 0 ? 0 : Math.min(s, s / pA);
+            pCirc += am1;
+            lp += Math.max(0, s - am1);
+        }
+    });
+    const prevTot = ESTADO.capturaBase.deudaCP + ESTADO.capturaBase.porcCircLP + ESTADO.capturaBase.deudaLP;
+    const nuevoTot = cp + pCirc + lp;
+    const diff = nuevoTot - prevTot;
+    ESTADO.capturaBase.deudaCP = cp;
+    ESTADO.capturaBase.porcCircLP = pCirc;
+    ESTADO.capturaBase.deudaLP = lp;
+    // Compensar en Otros Pasivos CP para conservar cuadre contable del Año Base
+    ESTADO.capturaBase.otrosPasCP = ESTADO.capturaBase.otrosPasCP - diff;
+    recalcularYRenderizarTodo();
+}
+
+// ============================================================================
+// 9. CAPTURA EDO. FIN. (AÑO BASE EDITABLE)
+// ============================================================================
+function renderCapturaBase() {
+    const b = ESTADO.capturaBase;
+    document.getElementById('lbl-anio-base-captura').innerText = b.fechaCierre || ESTADO.anioBase;
+
+    const diff = ESTADO.proyeccion.columnas[0].bg.diferencia;
+    const badge = document.getElementById('badge-cuadre-base');
+    if (Math.abs(diff) < 1) {
+        badge.className = 'font-extrabold px-3 py-1.5 rounded-full text-xs bg-emerald-100 text-emerald-800';
+        badge.innerText = '✓ Balance Base Cuadrado ($0.00)';
+    } else {
+        badge.className = 'font-extrabold px-3 py-1.5 rounded-full text-xs bg-red-100 text-red-700';
+        badge.innerText = `⚠ Descuadre Base: $${fmtNum(diff, 2)}`;
+    }
+
+    const erFields = [
+        ['ventasNacionales', 'Ventas Netas Nacionales'],
+        ['ventasExportacion', 'Ventas Netas Exportación'],
+        ['costoVentas', 'Costo de Ventas'],
+        ['gtosOp', 'Gastos de Venta y Admón.'],
+        ['depreciacion', 'Depreciación'],
+        ['amortizacion', 'Amortización'],
+        ['gastosFin', 'Gastos Financieros'],
+        ['productosFin', 'Productos Financieros'],
+        ['otrosGastos', 'Otros Gastos (Ingresos)'],
+        ['impuestos', 'ISR y PTU Totales']
+    ];
+
+    const bgFields = [
+        ['caja', 'Caja y Bancos'],
+        ['invTemp', 'Inversiones Temporales'],
+        ['clientes', 'Clientes y Doctos. x Cobrar'],
+        ['inventarios', 'Inventarios'],
+        ['otrosActCirc', 'Otros Activos Circulantes'],
+        ['ppe', 'Propiedad, Planta y Equipo Neto'],
+        ['otrosActNoCirc', 'Otros Activos No Circulantes'],
+        ['deudaCP', 'Deuda Financiera Corto Plazo'],
+        ['porcCircLP', 'Porción Circulante Largo Plazo'],
+        ['proveedores', 'Proveedores'],
+        ['otrosPasCP', 'Otros Pasivos Corto Plazo'],
+        ['deudaLP', 'Deuda Financiera Largo Plazo'],
+        ['otrosPasLP', 'Otros Pasivos Largo Plazo'],
+        ['capSocial', 'Capital Social y Reservas'],
+        ['utilRet', 'Utilidades Retenidas']
+    ];
+
+    const makeTbl = (titulo, list, color) => {
+        let h = `<thead><tr style="background:${color}; color:#fff;">
+            <th class="p-2.5 text-left">${titulo}</th>
+            <th class="p-2.5 text-right w-40">AÑO BASE (${ESTADO.anioBase})</th>
+        </tr></thead><tbody>`;
+        list.forEach(([k, lbl]) => {
+            h += `<tr class="ct-row-regular">
+                <td class="p-2 border border-slate-200 font-medium text-slate-700">${lbl}</td>
+                <td class="p-1.5 border border-slate-200">
+                    <input type="number" step="any" value="${b[k]}" oninput="onEditarCapturaBase('${k}', this.value)" class="input-param text-xs">
+                </td>
+            </tr>`;
+        });
+        return h + '</tbody>';
+    };
+
+    document.getElementById('tbl-captura-er').innerHTML = makeTbl('CAPTURA ESTADO DE RESULTADOS (AFE)', erFields, '#070E46');
+    document.getElementById('tbl-captura-bg').innerHTML = makeTbl('CAPTURA BALANCE GENERAL (AFE)', bgFields, '#0F5C6E');
+}
+
+function onEditarCapturaBase(campo, val) {
+    ESTADO.capturaBase[campo] = parseFloat(val) || 0;
+    ejecutarModeloFinanciero();
+    renderAlertaCajaYKPIs();
+    renderEdoFinanc();
+    const diff = ESTADO.proyeccion.columnas[0].bg.diferencia;
+    const badge = document.getElementById('badge-cuadre-base');
+    badge.className = Math.abs(diff) < 1
+        ? 'font-extrabold px-3 py-1.5 rounded-full text-xs bg-emerald-100 text-emerald-800'
+        : 'font-extrabold px-3 py-1.5 rounded-full text-xs bg-red-100 text-red-700';
+    badge.innerText = Math.abs(diff) < 1 ? '✓ Balance Base Cuadrado ($0.00)' : `⚠ Descuadre Base: $${fmtNum(diff, 2)}`;
+}
+
+// ============================================================================
+// 10. SIMULADOR RÁPIDO + AUTO-AJUSTE PARA CUADRAR CAJA A POSITIVO
+// ============================================================================
+function sincronizarPanelRapido() {
+    if (!ESTADO.parametros.length) return;
+    const p0 = ESTADO.parametros[0];
+    document.getElementById('quick-crec-ventas').value = p0.crecVentas;
+    document.getElementById('quick-costo-ventas').value = p0.costoVentasPct;
+    document.getElementById('quick-gtos-op').value = p0.gtosOpPct;
+    document.getElementById('quick-dias-cli').value = p0.diasClientes;
+    document.getElementById('quick-dias-inv').value = p0.diasInventarios;
+    document.getElementById('quick-dias-prov').value = p0.diasProveedores;
+    document.getElementById('quick-capex').value = p0.capexPct;
+    document.getElementById('quick-div').value = p0.dividendosPct;
+
+    const credNuevo = ESTADO.creditos.find(c => c.origen === 'NUEVO');
+    document.getElementById('quick-credito-monto').value = credNuevo ? credNuevo.saldoInicial : 0;
+    document.getElementById('quick-credito-tasa').value = credNuevo ? credNuevo.tasaAnual : 12.5;
+}
+
+function aplicarAjusteGlobalParam(key, valStr) {
+    const v = parseFloat(valStr);
+    const numV = isNaN(v) ? 0 : v;
+    ESTADO.parametros.forEach(p => { p[key] = numV; });
+    ejecutarModeloFinanciero();
+    renderAlertaCajaYKPIs();
+    renderEdoFinanc();
+    renderTablaParametros();
+}
+
+function actualizarCreditoRapido() {
+    const monto = Math.max(0, parseFloat(document.getElementById('quick-credito-monto').value) || 0);
+    const tasa = Math.max(0, parseFloat(document.getElementById('quick-credito-tasa').value) || 12.5);
+    let credNuevo = ESTADO.creditos.find(c => c.origen === 'NUEVO');
+
+    if (monto > 0) {
+        if (!credNuevo) {
+            credNuevo = {
+                id: 'cr_quick_nuevo',
+                origen: 'NUEVO',
+                institucion: 'Línea de Crédito / Ajuste de Liquidez',
+                tipo: 'REVOLVENTE',
+                saldoInicial: monto,
+                tasaAnual: tasa,
+                plazoAnios: Math.max(3, ESTADO.numAnios),
+                aniosGracia: 1,
+                anioDisposicion: 1
+            };
+            ESTADO.creditos.push(credNuevo);
+        } else {
+            credNuevo.saldoInicial = monto;
+            credNuevo.tasaAnual = tasa;
+        }
+    } else if (credNuevo) {
+        credNuevo.saldoInicial = 0;
+        credNuevo.tasaAnual = tasa;
+    }
+
+    ejecutarModeloFinanciero();
+    renderAlertaCajaYKPIs();
+    renderEdoFinanc();
+    renderModuloCredito();
+}
+
+function autoCuadrarCajaPositiva() {
+    if (!ESTADO.proyeccion) return;
+    if (ESTADO.proyeccion.minCaja >= 0) {
+        alert('La caja ya es positiva en todos los años proyectados.');
+        return;
+    }
+
+    // Buscar o crear una línea de ajuste revolvente / LP para eliminar cualquier déficit de caja
+    let lineaAjuste = ESTADO.creditos.find(c => c.id === 'cr_auto_cuadre');
+    if (!lineaAjuste) {
+        const primerAnioNeg = ESTADO.proyeccion.aniosCajaNeg[0] ? (ESTADO.proyeccion.aniosCajaNeg[0].anio - ESTADO.anioBase) : 1;
+        lineaAjuste = {
+            id: 'cr_auto_cuadre',
+            origen: 'NUEVO',
+            institucion: 'Línea Revolvente / Reestructura (Auto-Cuadre Caja)',
+            tipo: 'REVOLVENTE',
+            saldoInicial: 0,
+            tasaAnual: 12.0,
+            plazoAnios: Math.max(5, ESTADO.numAnios),
+            aniosGracia: 1,
+            anioDisposicion: Math.max(1, primerAnioNeg)
+        };
+        ESTADO.creditos.push(lineaAjuste);
+    }
+
+    // Convergencia iterativa considerando el impacto de los nuevos intereses sobre la caja
+    for (let iter = 0; iter < 15; iter++) {
+        ejecutarModeloFinanciero();
+        if (ESTADO.proyeccion.minCaja >= 100) break;
+        const faltante = Math.abs(ESTADO.proyeccion.minCaja) + 250;
+        lineaAjuste.saldoInicial = Math.ceil((lineaAjuste.saldoInicial + faltante * 1.15) / 100) * 100;
+    }
+
+    recalcularYRenderizarTodo();
+}
+
+// ============================================================================
+// 11. NAVEGACIÓN DE PESTAÑAS Y EXPORTACIÓN A EXCEL
+// ============================================================================
+function cambiarTabModelo(tab) {
+    ESTADO.tabActiva = tab;
+    ['edofin', 'parametros', 'credito', 'captura'].forEach(t => {
+        document.getElementById('tab-' + t).classList.toggle('hidden', t !== tab);
+    });
+    document.querySelectorAll('.ct-view-pill').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-tab') === tab);
+    });
+}
+
+function filtrarBloquesEdo(sub) {
+    ESTADO.subEdoActivo = sub;
+    ['er', 'flujo', 'bg', 'razones'].forEach(b => {
+        document.getElementById('edo-bloque-' + b).classList.toggle('hidden', sub !== 'todos' && sub !== b);
+    });
+    document.querySelectorAll('.sub-edo-btn').forEach(btn => {
+        const act = btn.getAttribute('data-sub') === sub;
+        btn.classList.toggle('ct-btn-royal', act);
+        btn.classList.toggle('ct-btn-soft', !act);
+    });
+}
+
+function togglePanelRapido() {
+    const body = document.getElementById('cuerpo-simulador-rapido');
+    const lbl = document.getElementById('lbl-toggle-rapido');
+    const oculto = body.classList.toggle('hidden');
+    lbl.innerText = oculto ? 'Mostrar controles' : 'Ocultar controles';
+}
+
+function exportarProyeccionesExcel() {
+    if (!ESTADO.proyeccion) return;
+    const wb = XLSX.utils.book_new();
+    const cols = ESTADO.proyeccion.columnas;
+    const hdr = ['CONCEPTO', ...cols.map(c => c.esBase ? `BASE ${c.anio}` : `PROY ${c.anio}`)];
+
+    // Hoja 1: Edo. Financ.
+    const aoaEdo = [
+        ['PROYECCIONES FINANCIERAS - EDO. FINANC.', ESTADO.empresa || 'CLIENTE'],
+        [],
+        hdr,
+        ['--- ESTADO DE RESULTADOS ---'],
+        ['Ventas Netas Nacionales', ...cols.map(c => +c.er.ventasNac.toFixed(2))],
+        ['Ventas Netas Exportación', ...cols.map(c => +c.er.ventasExp.toFixed(2))],
+        ['VENTAS NETAS TOTALES', ...cols.map(c => +c.er.ventasTot.toFixed(2))],
+        ['Costo de Ventas', ...cols.map(c => +c.er.costoVentas.toFixed(2))],
+        ['UTILIDAD BRUTA', ...cols.map(c => +c.er.utilidadBruta.toFixed(2))],
+        ['Gastos de Venta y Admón.', ...cols.map(c => +c.er.gtosOp.toFixed(2))],
+        ['Depreciación', ...cols.map(c => +c.er.depreciacion.toFixed(2))],
+        ['Amortización', ...cols.map(c => +c.er.amortizacion.toFixed(2))],
+        ['UAFIR (EBIT)', ...cols.map(c => +c.er.uafir.toFixed(2))],
+        ['UAFIRDA (EBITDA)', ...cols.map(c => +c.er.uafirda.toFixed(2))],
+        ['Gastos Financieros', ...cols.map(c => +c.er.gastosFin.toFixed(2))],
+        ['Productos Financieros', ...cols.map(c => +c.er.productosFin.toFixed(2))],
+        ['Utilidad Antes de Impuestos', ...cols.map(c => +c.er.uai.toFixed(2))],
+        ['Impuestos (ISR y PTU)', ...cols.map(c => +c.er.impuestos.toFixed(2))],
+        ['UTILIDAD NETA', ...cols.map(c => +c.er.utilidadNeta.toFixed(2))],
+        [],
+        ['--- FLUJO DE EFECTIVO ---'],
+        ['Flujo de Operación (FEO)', ...cols.map(c => c.esBase ? 0 : +c.flujo.feo.toFixed(2))],
+        ['CAPEX', ...cols.map(c => c.esBase ? 0 : +c.flujo.capex.toFixed(2))],
+        ['Flujo Libre (CFADS)', ...cols.map(c => c.esBase ? 0 : +c.flujo.flujoLibre.toFixed(2))],
+        ['Disposiciones Crédito', ...cols.map(c => c.esBase ? 0 : +c.flujo.disposiciones.toFixed(2))],
+        ['Amortizaciones Deuda', ...cols.map(c => c.esBase ? 0 : +c.flujo.amortizaciones.toFixed(2))],
+        ['Dividendos', ...cols.map(c => c.esBase ? 0 : +c.flujo.dividendos.toFixed(2))],
+        ['CAJA FINAL PROYECTADA', ...cols.map(c => +c.flujo.cajaFinal.toFixed(2))],
+        [],
+        ['--- BALANCE GENERAL ---'],
+        ['Caja y Bancos', ...cols.map(c => +c.bg.caja.toFixed(2))],
+        ['Clientes', ...cols.map(c => +c.bg.clientes.toFixed(2))],
+        ['Inventarios', ...cols.map(c => +c.bg.inventarios.toFixed(2))],
+        ['TOTAL ACTIVO CIRCULANTE', ...cols.map(c => +c.bg.totActCirc.toFixed(2))],
+        ['Prop. Planta y Equipo Neto', ...cols.map(c => +c.bg.ppe.toFixed(2))],
+        ['TOTAL ACTIVO', ...cols.map(c => +c.bg.totActivo.toFixed(2))],
+        ['Deuda Financiera CP', ...cols.map(c => +c.bg.deudaCP.toFixed(2))],
+        ['Porción Circulante LP', ...cols.map(c => +c.bg.porcCircLP.toFixed(2))],
+        ['Proveedores', ...cols.map(c => +c.bg.proveedores.toFixed(2))],
+        ['TOTAL PASIVO CP', ...cols.map(c => +c.bg.totPasCP.toFixed(2))],
+        ['Deuda Financiera LP', ...cols.map(c => +c.bg.deudaLP.toFixed(2))],
+        ['TOTAL PASIVO', ...cols.map(c => +c.bg.totPasivo.toFixed(2))],
+        ['TOTAL CAPITAL CONTABLE', ...cols.map(c => +c.bg.totCapital.toFixed(2))],
+        ['TOTAL PASIVO + CAPITAL', ...cols.map(c => +c.bg.totPasCap.toFixed(2))],
+        ['DIFERENCIA CUADRE', ...cols.map(c => +c.bg.diferencia.toFixed(2))],
+        [],
+        ['--- RAZONES FINANCIERAS ---'],
+        ['Margen EBITDA (%)', ...cols.map(c => +c.razones.margenEbitda.toFixed(2))],
+        ['Deuda Neta / EBITDA (x)', ...cols.map(c => +c.razones.deudaNetaEbitda.toFixed(2))],
+        ['DSCR (x)', ...cols.map(c => c.esBase ? 0 : +c.razones.dscr.toFixed(2))]
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoaEdo), 'Edo. Financ.');
+
+    // Hoja 2: Parámetros
+    const aoaPar = [
+        ['PARÁMETRO', ...ESTADO.parametros.map(p => `PROY ${p.anio}`)],
+        ...FILAS_PARAMETROS.map(f => [f.label, ...ESTADO.parametros.map(p => p[f.key])])
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoaPar), 'Parametros');
+
+    // Hoja 3: Crédito
+    const aoaCred = [
+        ['Origen', 'Institución', 'Tipo', 'Saldo/Monto', 'Tasa %', 'Plazo Años', 'Gracia Años', 'Año Disp.'],
+        ...ESTADO.creditos.map(c => [c.origen, c.institucion, c.tipo, c.saldoInicial, c.tasaAnual, c.plazoAnios, c.aniosGracia, c.anioDisposicion])
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoaCred), 'Credito');
+
+    // Hoja 4: Captura Edo Fin
+    const aoaCap = [['Concepto Año Base', 'Monto'], ...Object.entries(ESTADO.capturaBase)];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoaCap), 'Captura Edo Fin');
+
+    const nombre = (ESTADO.empresa || 'Proyecciones').replace(/[^A-Z0-9]/gi, '_');
+    XLSX.writeFile(wb, `Proyecciones_Financieras_${nombre}.xlsx`);
+}
+
+// ============================================================================
+// 12. CARGA DE DEMO Y SINCRONIZACIÓN AUTOMÁTICA CON LOCALSTORAGE (INDEX.HTML)
+// ============================================================================
+function cargarCasoDemo() {
+    ESTADO.empresa = 'GRUPO INDUSTRIAL DEMO SA DE CV';
+    ESTADO.ejerciciosAFE = [
+        normalizarEjercicioAFE({
+            metadata: { fechaCierre: '2023-12-31', inflacion: 4.66 },
+            er: {
+                'VENTAS NETAS NACIONALES': 185000, 'VENTAS NETAS EXPORTACION': 25000,
+                'COSTO DE VENTAS': 142800, 'GTOS DE VTA. Y ADMON.': 37800,
+                'DEPRECIACION': 6200, 'AMORTIZACION': 400, 'GASTOS FINANCIEROS': 7800,
+                'PRODUCTOS FINANCIEROS': 450, 'I.S.R. CAUSADO': 4500, 'P.T.U. CAUSADO': 1100,
+                'INVERSION EN ACTIVOS FIJOS': 7500
+            },
+            bg: {
+                'CAJA Y BANCOS': 6800, 'CLIENTES Y DOCTOS X COB.': 34000, 'INVENTARIOS': 26000,
+                'OTROS ACT. CIRC. OPERATIVOS': 4200, 'PROP. PLANTA Y EQ. NETO': 84000, 'CARGOS DIFERIDOS': 3000,
+                'BANCOMER CORTO PLAZO': 12000, 'PORC. CIRC. LP BANCOMER': 14000, 'PROVEEDORES': 19500,
+                'GASTOS ACUMULADOS': 5500, 'BANCOMER LARGO PLAZO': 42000, 'OTROS PASIVOS LARGO PZO.': 4000,
+                'CAPITAL SOCIAL ACTUALIZADO': 30000, 'UTILIDADES RETENIDAS': 21150
+            }
+        }),
+        normalizarEjercicioAFE({
+            metadata: { fechaCierre: '2024-12-31', inflacion: 4.21 },
+            er: {
+                'VENTAS NETAS NACIONALES': 205000, 'VENTAS NETAS EXPORTACION': 30000,
+                'COSTO DE VENTAS': 162150, 'GTOS DE VTA. Y ADMON.': 42300,
+                'DEPRECIACION': 6900, 'AMORTIZACION': 400, 'GASTOS FINANCIEROS': 9400,
+                'PRODUCTOS FINANCIEROS': 500, 'I.S.R. CAUSADO': 4100, 'P.T.U. CAUSADO': 950,
+                'INVERSION EN ACTIVOS FIJOS': 9200
+            },
+            bg: {
+                'CAJA Y BANCOS': 5400, 'CLIENTES Y DOCTOS X COB.': 41500, 'INVENTARIOS': 31500,
+                'OTROS ACT. CIRC. OPERATIVOS': 4600, 'PROP. PLANTA Y EQ. NETO': 89000, 'CARGOS DIFERIDOS': 2600,
+                'BANCOMER CORTO PLAZO': 18000, 'PORC. CIRC. LP BANCOMER': 18000, 'PROVEEDORES': 21000,
+                'GASTOS ACUMULADOS': 6200, 'BANCOMER LARGO PLAZO': 44000, 'OTROS PASIVOS LARGO PZO.': 4000,
+                'CAPITAL SOCIAL ACTUALIZADO': 30000, 'UTILIDADES RETENIDAS': 24100
+            }
+        }),
+        normalizarEjercicioAFE({
+            metadata: { fechaCierre: '2025-12-31', inflacion: 4.00 },
+            er: {
+                'VENTAS NETAS NACIONALES': 228000, 'VENTAS NETAS EXPORTACION': 34000,
+                'COSTO DE VENTAS': 183400, 'GTOS DE VTA. Y ADMON.': 48200,
+                'DEPRECIACION': 7500, 'AMORTIZACION': 400, 'GASTOS FINANCIEROS': 11200,
+                'PRODUCTOS FINANCIEROS': 400, 'I.S.R. CAUSADO': 3500, 'P.T.U. CAUSADO': 800,
+                'INVERSION EN ACTIVOS FIJOS': 11000
+            },
+            bg: {
+                'CAJA Y BANCOS': 4200, 'CLIENTES Y DOCTOS X COB.': 49000, 'INVENTARIOS': 36800,
+                'OTROS ACT. CIRC. OPERATIVOS': 5000, 'PROP. PLANTA Y EQ. NETO': 94500, 'CARGOS DIFERIDOS': 2200,
+                'BANCOMER CORTO PLAZO': 24000, 'PORC. CIRC. LP BANCOMER': 22000, 'PROVEEDORES': 22500,
+                'GASTOS ACUMULADOS': 6800, 'BANCOMER LARGO PLAZO': 46000, 'OTROS PASIVOS LARGO PZO.': 4000,
+                'CAPITAL SOCIAL ACTUALIZADO': 30000, 'UTILIDADES RETENIDAS': 29000
+            }
+        })
+    ];
+
+    ESTADO.creditos = [
+        { id: 'demo_1', origen: 'EXISTENTE', institucion: 'BBVA Línea Corto Plazo', tipo: 'CP', saldoInicial: 24000, tasaAnual: 13.5, plazoAnios: 1, aniosGracia: 0, anioDisposicion: 0 },
+        { id: 'demo_2', origen: 'EXISTENTE', institucion: 'BBVA Crédito Simple LP', tipo: 'LP', saldoInicial: 44000, tasaAnual: 12.25, plazoAnios: 3, aniosGracia: 0, anioDisposicion: 0 },
+        { id: 'demo_3', origen: 'EXISTENTE', institucion: 'Banorte Arrendamiento LP', tipo: 'LP', saldoInicial: 24000, tasaAnual: 13.0, plazoAnios: 3, aniosGracia: 0, anioDisposicion: 0 }
+    ];
+
+    ESTADO.capturaBase = null;
+    actualizarUIArchivoAFE();
+    actualizarUIArchivoPasivos();
+    abrirModalAnios();
+}
+
+function inicializarDragAndDrop() {
+    [
+        { dz: 'dropzone-afe', inp: 'input-file-afe', fn: procesarArchivoAFE },
+        { dz: 'dropzone-pasivos', inp: 'input-file-pasivos', fn: procesarArchivoPasivos }
+    ].forEach(cfg => {
+        const el = document.getElementById(cfg.dz);
+        const inp = document.getElementById(cfg.inp);
+        if (!el || !inp) return;
+        ['dragenter', 'dragover'].forEach(ev => el.addEventListener(ev, e => { e.preventDefault(); el.classList.add('drag-active'); }));
+        ['dragleave', 'drop'].forEach(ev => el.addEventListener(ev, e => { e.preventDefault(); el.classList.remove('drag-active'); }));
+        el.addEventListener('drop', e => {
+            const files = e.dataTransfer && e.dataTransfer.files;
+            if (files && files.length) {
+                const dt = new DataTransfer();
+                dt.items.add(files[0]);
+                inp.files = dt.files;
+                cfg.fn({ target: inp });
+            }
+        });
+    });
+}
+
+window.addEventListener('DOMContentLoaded', function() {
+    inicializarDragAndDrop();
+
+    // Recuperar automáticamente AFE si el usuario viene desde index.html
+    try {
+        const raw = localStorage.getItem('afe_supuestos_proyecciones');
+        if (raw) {
+            const data = JSON.parse(raw);
+            if (data && Array.isArray(data.ejerciciosHistoricos) && data.ejerciciosHistoricos.length > 0) {
+                ESTADO.empresa = (data.cliente && data.cliente.empresa) || '';
+                ESTADO.noCliente = (data.cliente && data.cliente.noCliente) || '';
+                ESTADO.ejerciciosAFE = data.ejerciciosHistoricos.map(normalizarEjercicioAFE);
+                actualizarUIArchivoAFE();
+                document.getElementById('banner-localstorage').classList.remove('hidden');
+                document.getElementById('lbl-ls-ejercicios').innerText = String(ESTADO.ejerciciosAFE.length);
+            }
+        }
+    } catch (e) {
+        console.warn('No se pudo leer localStorage:', e);
+    }
+});
+</script>
+</body>
+</html>

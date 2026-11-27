@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Generador de Avisos Gmail</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 850px; margin: 24px auto; padding: 0 16px; }
+    textarea, input, select { width: 100%; margin: 6px 0 14px; padding: 8px; box-sizing: border-box; }
+    button, .btn { background: #1a73e8; color: #fff; border: none; padding: 8px 14px; border-radius: 4px; cursor: pointer; text-decoration: none; display: inline-block; }
+    .enviado { background: #e6f4ea; }
+    .btn.usado { background: #5f6368; }
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+  </style>
+</head>
+<body>
+  <h2>Generador de correos para Gmail corporativo</h2>
+
+  <label>Cuenta de Gmail en este navegador (0 = principal, 1 = secundaria):</label>
+  <select id="cuenta">
+    <option value="0">Cuenta 0 (Principal)</option>
+    <option value="1">Cuenta 1 (Secundaria)</option>
+    <option value="2">Cuenta 2</option>
+  </select>
+
+  <label>Asunto del correo:</label>
+  <input id="asunto" value="Aviso: Límite de gastos excedido - {nombre}">
+
+  <label>Mensaje (usa {nombre}, {gasto}, {limite}, {excedente}):</label>
+  <textarea id="plantilla" rows="5">Hola {nombre},
+
+Te informamos que tu gasto actual (${gasto}) ha superado tu límite autorizado (${limite}) por ${excedente}.
+
+Por favor revisa tu estado de cuenta. Saludos.</textarea>
+
+  <label>Pega aquí tus filas desde Excel (Nombre | Correo | Gasto | Límite):</label>
+  <textarea id="datos" rows="6" placeholder="Juan Pérez	juan@empresa.com	15000	10000"></textarea>
+
+  <button onclick="generar()">Filtrar y preparar correos</button>
+
+  <div id="resultado"></div>
+
+  <script>
+    function limpiarNum(v) {
+      return parseFloat(String(v || '').replace(/[^0-9.-]/g, ''));
+    }
+
+    function generar() {
+      const cuenta = document.getElementById('cuenta').value;
+      const asuntoBase = document.getElementById('asunto').value;
+      const plantilla = document.getElementById('plantilla').value;
+      const lineas = document.getElementById('datos').value.trim().split(/\r?\n/);
+
+      let filas = '';
+      lineas.forEach(linea => {
+        const cols = linea.includes('\t') ? linea.split('\t') : linea.split(',');
+        if (cols.length < 4) return;
+
+        const nombre = cols[0].trim();
+        const correo = cols[1].trim();
+        const gasto = limpiarNum(cols[2]);
+        const limite = limpiarNum(cols[3]);
+
+        if (isNaN(gasto) || isNaN(limite) || gasto <= limite) return;
+
+        const excedente = (gasto - limite).toFixed(2);
+        const reemplazar = txt => txt
+          .replaceAll('{nombre}', nombre)
+          .replaceAll('{gasto}', gasto.toFixed(2))
+          .replaceAll('{limite}', limite.toFixed(2))
+          .replaceAll('{excedente}', excedente);
+
+        const url = `https://mail.google.com/mail/u/${cuenta}/?view=cm&fs=1`
+          + `&to=${encodeURIComponent(correo)}`
+          + `&su=${encodeURIComponent(reemplazar(asuntoBase))}`
+          + `&body=${encodeURIComponent(reemplazar(plantilla))}`;
+
+        filas += `<tr>
+          <td>${nombre}</td>
+          <td>${correo}</td>
+          <td>$${gasto.toFixed(2)} / $${limite.toFixed(2)}</td>
+          <td><a class="btn" href="${url}" target="_blank" onclick="marcar(this)">Abrir en Gmail</a></td>
+        </tr>`;
+      });
+
+      document.getElementById('resultado').innerHTML = filas
+        ? `<table><tr><th>Cliente</th><th>Correo</th><th>Gasto / Límite</th><th>Acción</th></tr>${filas}</table>`
+        : '<p>Ningún cliente superó el límite (o revisa el orden de las 4 columnas).</p>';
+    }
+
+    function marcar(el) {
+      el.classList.add('usado');
+      el.textContent = 'Abierto ✓';
+      el.closest('tr').classList.add('enviado');
+    }
+  </script>
+</body>
+</html>
